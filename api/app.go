@@ -18,6 +18,9 @@ import (
 	"github.com/uber-go/zap"
 )
 
+// JSON type
+type JSON map[string]interface{}
+
 // App is a struct that represents a mqttbridge API Application
 type App struct {
 	Debug      bool

@@ -43,8 +43,8 @@ func init() {
 	)
 
 	RootCmd.PersistentFlags().StringVarP(
-		&ConfigFile, "config", "c", "./config/local.yaml",
-		"config file (default is ./config/local.yaml",
+		&ConfigFile, "config", "c", "./config/local.yml",
+		"config file (default is ./config/local.yml",
 	)
 }
 

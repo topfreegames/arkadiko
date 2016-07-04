@@ -1,5 +1,6 @@
 package: github.com/topfreegames/mqttbridge
 import:
+- package: github.com/gavv/httpexpect
 - package: github.com/kataras/iris
 - package: github.com/rcrowley/go-metrics
 - package: github.com/spf13/cobra
