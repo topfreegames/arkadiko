@@ -30,8 +30,15 @@ install:
 run:
 	@go run main.go start
 
-test:
-	@go test $(PACKAGES)
+run-containers:
+	@cd test_containers && docker-compose up -d && cd ..
+
+kill-containers:
+	@cd test_containers && docker-compose stop && cd ..
+
+run-tests: kill-containers run-containers
+	@make coverage
+	@make kill-containers
 
 coverage:
 	@echo "mode: count" > coverage-all.out
