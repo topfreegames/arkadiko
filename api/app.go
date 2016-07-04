@@ -51,6 +51,7 @@ func (app *App) Configure() {
 	app.Logger = zap.NewJSON(zap.WarnLevel)
 
 	app.setConfigurationDefaults()
+	app.loadConfiguration()
 	app.configureApplication()
 }
 
