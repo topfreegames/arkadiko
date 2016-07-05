@@ -8,7 +8,6 @@ import (
 
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/mqttbot/logger"
 	"github.com/uber-go/zap"
 )
 
@@ -36,6 +35,16 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler) *M
 		client.start(onConnectHandler)
 	})
 	return client
+}
+
+// SendMessage sends the message with the given payload to topic
+func (mc *MqttClient) SendMessage(topic string, message string) error {
+	// TODO: Test this
+	if token := mc.MqttClient.Publish(topic, 2, false, message); token.Wait() && token.Error() != nil {
+		mc.Logger.Error(fmt.Sprintf("%v", token.Error()))
+		return token.Error()
+	}
+	return nil
 }
 
 func (mc *MqttClient) configure() {
@@ -72,7 +81,7 @@ func (mc *MqttClient) configureClient() {
 }
 
 func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
-	logger.Logger.Debug("Initializing mqtt client")
+	mc.Logger.Debug("Initializing mqtt client")
 
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", mc.MqttServerHost, mc.MqttServerPort)).SetClientID("mqttbridge")
 	opts.SetUsername(mc.Config.GetString("mqttserver.user"))
@@ -86,9 +95,9 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	c := mc.MqttClient
 
 	if token := c.Connect(); token.Wait() && token.Error() != nil {
-		logger.Logger.Fatal(token.Error())
+		mc.Logger.Fatal(fmt.Sprintf("%v", token.Error()))
 	}
 
-	logger.Logger.Info(fmt.Sprintf("Successfully connected to mqtt server at %s:%d!",
+	mc.Logger.Info(fmt.Sprintf("Successfully connected to mqtt server at %s:%d!",
 		mc.MqttServerHost, mc.MqttServerPort))
 }

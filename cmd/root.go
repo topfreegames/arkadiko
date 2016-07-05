@@ -36,7 +36,7 @@ func Execute(cmd *cobra.Command) {
 }
 
 func init() {
-	// cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().IntVarP(
 		&Verbose, "verbose", "v", 0,
 		"Verbosity level => v0: Error, v1=Warning, v2=Info, v3=Debug",

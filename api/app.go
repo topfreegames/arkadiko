@@ -16,6 +16,8 @@ import (
 	"github.com/rcrowley/go-metrics"
 	"github.com/spf13/viper"
 	"github.com/uber-go/zap"
+
+	"github.com/topfreegames/mqttbridge/mqttclient"
 )
 
 // JSON type
@@ -31,6 +33,7 @@ type App struct {
 	App        *iris.Framework
 	Config     *viper.Viper
 	Logger     zap.Logger
+	MqttClient *mqttclient.MqttClient
 }
 
 // GetApp returns a new mqttbridge API Application
@@ -41,6 +44,7 @@ func GetApp(host string, port int, configPath string, debug bool) *App {
 		ConfigPath: configPath,
 		Config:     viper.New(),
 		Debug:      debug,
+		MqttClient: nil,
 	}
 	app.Configure()
 	return app
@@ -95,5 +99,6 @@ func (app *App) addError() {
 
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() {
+	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil)
 	app.App.Listen(fmt.Sprintf("%s:%d", app.Host, app.Port))
 }
