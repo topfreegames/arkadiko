@@ -1,5 +1,5 @@
-// mqttbridge
-// https://github.com/topfreegames/mqttbridge
+// arkadiko
+// https://github.com/topfreegames/arkadiko
 //
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
@@ -17,13 +17,13 @@ import (
 	"github.com/spf13/viper"
 	"github.com/uber-go/zap"
 
-	"github.com/topfreegames/mqttbridge/mqttclient"
+	"github.com/topfreegames/arkadiko/mqttclient"
 )
 
 // JSON type
 type JSON map[string]interface{}
 
-// App is a struct that represents a mqttbridge API Application
+// App is a struct that represents a arkadiko API Application
 type App struct {
 	Debug      bool
 	Port       int
@@ -36,7 +36,7 @@ type App struct {
 	MqttClient *mqttclient.MqttClient
 }
 
-// GetApp returns a new mqttbridge API Application
+// GetApp returns a new arkadiko API Application
 func GetApp(host string, port int, configPath string, debug bool) *App {
 	app := &App{
 		Host:       host,
@@ -50,7 +50,7 @@ func GetApp(host string, port int, configPath string, debug bool) *App {
 	return app
 }
 
-// Configure instantiates the required dependencies for mqttbridge Api Application
+// Configure instantiates the required dependencies for arkadiko Api Application
 func (app *App) Configure() {
 	app.Logger = zap.NewJSON(zap.WarnLevel)
 
@@ -65,7 +65,7 @@ func (app *App) setConfigurationDefaults() {
 
 func (app *App) loadConfiguration() {
 	app.Config.SetConfigFile(app.ConfigPath)
-	app.Config.SetEnvPrefix("mqttbridge")
+	app.Config.SetEnvPrefix("arkadiko")
 	app.Config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	app.Config.AutomaticEnv()
 

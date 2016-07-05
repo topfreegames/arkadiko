@@ -1,5 +1,5 @@
-// mqttbridge
-// https://github.com/topfreegames/mqttbridge
+// arkadiko
+// https://github.com/topfreegames/arkadiko
 //
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
@@ -14,7 +14,7 @@ import (
 	"github.com/gavv/httpexpect"
 )
 
-// GetDefaultTestApp returns a new mqttbridge API Application bound to 0.0.0.0:8888 for test
+// GetDefaultTestApp returns a new arkadiko API Application bound to 0.0.0.0:8888 for test
 func GetDefaultTestApp() *App {
 	app := GetApp("0.0.0.0", 8890, "../config/test.yml", true)
 	app.Configure()

@@ -1,5 +1,5 @@
-// mqttbridge
-// https://github.com/topfreegames/mqttbridge
+// arkadiko
+// https://github.com/topfreegames/arkadiko
 //
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
@@ -9,7 +9,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/topfreegames/mqttbridge/api"
+	"github.com/topfreegames/arkadiko/api"
 )
 
 var host string
@@ -19,8 +19,8 @@ var debug bool
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "starts the mqttbridge API server",
-	Long: `Starts mqttbridge server with the specified arguments. You can use
+	Short: "starts the arkadiko API server",
+	Long: `Starts arkadiko server with the specified arguments. You can use
 	environment variables to override configuration keys.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		app := api.GetApp(
@@ -37,7 +37,7 @@ var startCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(startCmd)
 
-	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind mqttbridge to")
-	startCmd.Flags().IntVarP(&port, "port", "p", 8890, "Port to bind mqttbridge to")
+	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind arkadiko to")
+	startCmd.Flags().IntVarP(&port, "port", "p", 8890, "Port to bind arkadiko to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
 }

@@ -1,4 +1,4 @@
-package: github.com/topfreegames/mqttbridge
+package: github.com/topfreegames/arkadiko
 import:
 - package: github.com/gavv/httpexpect
 - package: github.com/kataras/iris

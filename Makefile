@@ -1,11 +1,11 @@
-# mqttbridge
-# https://github.com/topfreegames/mqttbridge
+# arkadiko
+# https://github.com/topfreegames/arkadiko
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2016 Top Free Games <backend@tfgco.com>
 
 PACKAGES = $(shell glide novendor)
-GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/mqttbridge@.@g | egrep -v "^[.]$$")
+GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/arkadiko@.@g | egrep -v "^[.]$$")
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
 
 setup:

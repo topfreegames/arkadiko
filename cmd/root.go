@@ -1,5 +1,5 @@
-// mqttbridge
-// https://github.com/topfreegames/mqttbridge
+// arkadiko
+// https://github.com/topfreegames/arkadiko
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
@@ -17,17 +17,17 @@ import (
 // ConfigFile is the configuration file used for running a command
 var ConfigFile string
 
-// Verbose determines how verbose mqttbridge will run under
+// Verbose determines how verbose arkadiko will run under
 var Verbose int
 
-// RootCmd is the root command for mqttbridge CLI application
+// RootCmd is the root command for arkadiko CLI application
 var RootCmd = &cobra.Command{
-	Use:   "mqttbridge",
-	Short: "mqttbridge bridges http to mqtt",
-	Long:  `mqttbridge bridges http to mqtt.`,
+	Use:   "arkadiko",
+	Short: "arkadiko bridges http to mqtt",
+	Long:  `arkadiko bridges http to mqtt.`,
 }
 
-// Execute runs RootCmd to initialize mqttbridge CLI application
+// Execute runs RootCmd to initialize arkadiko CLI application
 func Execute(cmd *cobra.Command) {
 	if err := cmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -53,10 +53,10 @@ func initConfig() {
 	if ConfigFile != "" { // enable ability to specify config file via flag
 		viper.SetConfigFile(ConfigFile)
 	}
-	viper.SetEnvPrefix("mqttbridge")
-	viper.SetConfigName(".mqttbridge") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")       // adding home directory as first search path
-	viper.AutomaticEnv()               // read in environment variables that match
+	viper.SetEnvPrefix("arkadiko")
+	viper.SetConfigName(".arkadiko") // name of config file (without extension)
+	viper.AddConfigPath("$HOME")     // adding home directory as first search path
+	viper.AutomaticEnv()             // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

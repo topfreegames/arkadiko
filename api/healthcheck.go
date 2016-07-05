@@ -1,5 +1,5 @@
-// mqttbridge
-// https://github.com/topfreegames/mqttbridge
+// arkadiko
+// https://github.com/topfreegames/arkadiko
 //
 // Licensed under the MIT license:
 // http://www.opensource.org/licenses/mit-license

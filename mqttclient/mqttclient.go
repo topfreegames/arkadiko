@@ -1,3 +1,9 @@
+// arkadiko
+// https://github.com/topfreegames/arkadiko
+// Licensed under the MIT license:
+// http://www.opensource.org/licenses/mit-license
+// Copyright © 2016 Top Free Games <backend@tfgco.com>
+
 package mqttclient
 
 import (
@@ -64,7 +70,7 @@ func (mc *MqttClient) setConfigurationDefaults() {
 
 func (mc *MqttClient) loadConfiguration() {
 	mc.Config.SetConfigFile(mc.ConfigPath)
-	mc.Config.SetEnvPrefix("mqttbridge")
+	mc.Config.SetEnvPrefix("arkadiko")
 	mc.Config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	mc.Config.AutomaticEnv()
 
@@ -83,7 +89,7 @@ func (mc *MqttClient) configureClient() {
 func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	mc.Logger.Debug("Initializing mqtt client")
 
-	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", mc.MqttServerHost, mc.MqttServerPort)).SetClientID("mqttbridge")
+	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", mc.MqttServerHost, mc.MqttServerPort)).SetClientID("arkadiko")
 	opts.SetUsername(mc.Config.GetString("mqttserver.user"))
 	opts.SetPassword(mc.Config.GetString("mqttserver.pass"))
 	opts.SetKeepAlive(3 * time.Second)
