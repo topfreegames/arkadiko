@@ -82,10 +82,12 @@ func (app *App) configureApplication() {
 
 	a.Get("/healthcheck", HealthCheckHandler(app))
 
-	// Game Routes
-	//a.Post("/games", CreateGameHandler(app))
+	// MQTT Route
+	a.Post("/sendmqtt", SendMqttHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
+
+	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil)
 
 	go func() {
 		app.Errors.Tick()
@@ -99,6 +101,5 @@ func (app *App) addError() {
 
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() {
-	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil)
 	app.App.Listen(fmt.Sprintf("%s:%d", app.Host, app.Port))
 }

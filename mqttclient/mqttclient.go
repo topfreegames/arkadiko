@@ -45,7 +45,6 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler) *M
 
 // SendMessage sends the message with the given payload to topic
 func (mc *MqttClient) SendMessage(topic string, message string) error {
-	// TODO: Test this
 	if token := mc.MqttClient.Publish(topic, 2, false, message); token.Wait() && token.Error() != nil {
 		mc.Logger.Error(fmt.Sprintf("%v", token.Error()))
 		return token.Error()
