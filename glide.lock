@@ -1,5 +1,5 @@
-hash: 33921aab9408a50180d73e5bcbd3291815fef8f3d35e27c90aa79c4f768bc859
-updated: 2016-07-04T18:06:34.148211461-03:00
+hash: e5646badffefa1c0ec1500f177e8a6258143ee4dc285f5de4538b07ca6768bb0
+updated: 2016-07-07T11:40:23.347272221-03:00
 imports:
 - name: github.com/ajg/form
   version: 7ff89c75808766205bfa4411abb436c98c33eb5e
@@ -15,6 +15,10 @@ imports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
+- name: github.com/eclipse/paho.mqtt.golang
+  version: 44eec149d4433449add74781ffc86cc60d3f1598
+  subpackages:
+  - packets
 - name: github.com/eknkc/amber
   version: 91774f050c1453128146169b626489e60108ec03
   subpackages:
@@ -166,6 +170,7 @@ imports:
   version: b400c2eff1badec7022a8c8f5bea058b6315eed7
   subpackages:
   - publicsuffix
+  - websocket
   - html
   - html/atom
 - name: golang.org/x/sys
