@@ -20,5 +20,4 @@ ENV ARKADIKO_MQTTSERVER_PORT 1883
 ENV ARKADIKO_MQTTSERVER_USER admin
 ENV ARKADIKO_MQTTSERVER_PASS admin
 
-# TODO: test this
 CMD /go/bin/arkadiko start --bind 0.0.0.0 --port 8890 --config /go/src/github.com/topfreegames/arkadiko/config/local.yml
