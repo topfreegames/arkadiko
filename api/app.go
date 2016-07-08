@@ -92,7 +92,7 @@ func (app *App) configureApplication() {
 
 	app.Errors = metrics.NewEWMA15()
 
-	app.RedisClient = redisclient.GetRedisClient()
+	app.RedisClient = redisclient.GetRedisClient(app.Config.GetString("redis.host"), app.Config.GetInt("redis.port"))
 	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil)
 
 	go func() {

@@ -9,6 +9,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -53,6 +54,7 @@ func initConfig() {
 	if ConfigFile != "" { // enable ability to specify config file via flag
 		viper.SetConfigFile(ConfigFile)
 	}
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("arkadiko")
 	viper.SetConfigName(".arkadiko") // name of config file (without extension)
 	viper.AddConfigPath("$HOME")     // adding home directory as first search path

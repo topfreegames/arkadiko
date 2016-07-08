@@ -3,3 +3,7 @@ mqttserver:
   port: 1883
   user: mqttclient
   pass: password
+redis:
+  host: localhost
+  port: 4444
+  maxPoolSize: 20

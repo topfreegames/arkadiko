@@ -27,6 +27,15 @@ build:
 install:
 	@go install
 
+# get a redis instance up (localhost:4444)
+redis:
+	@redis-server ./redis.conf; sleep 1
+	@redis-cli -p 4444 info > /dev/null
+
+# kill this redis instance (localhost:4444)
+kill-redis:
+	@-redis-cli -p 4444 shutdown
+
 run:
 	@go run main.go start
 
@@ -36,14 +45,15 @@ run-containers:
 kill-containers:
 	@cd test_containers && docker-compose stop && cd ..
 
-run-tests: kill-containers run-containers
+run-tests: kill-redis redis kill-containers run-containers
 	@make coverage
 	@make kill-containers
+	@make kill-redis
 
 coverage:
 	@echo "mode: count" > coverage-all.out
 	@$(foreach pkg,$(PACKAGES),\
-		go test -coverprofile=coverage.out -covermode=count $(pkg) || exit 1 &&\
+		ARKADIKO_REDIS_PORT=4444 go test -coverprofile=coverage.out -covermode=count $(pkg) || exit 1 &&\
 		tail -n +2 coverage.out >> coverage-all.out;)
 
 coverage-html:
