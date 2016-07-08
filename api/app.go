@@ -18,6 +18,7 @@ import (
 	"github.com/uber-go/zap"
 
 	"github.com/topfreegames/arkadiko/mqttclient"
+	"github.com/topfreegames/arkadiko/redisclient"
 )
 
 // JSON type
@@ -25,15 +26,16 @@ type JSON map[string]interface{}
 
 // App is a struct that represents a arkadiko API Application
 type App struct {
-	Debug      bool
-	Port       int
-	Host       string
-	ConfigPath string
-	Errors     metrics.EWMA
-	App        *iris.Framework
-	Config     *viper.Viper
-	Logger     zap.Logger
-	MqttClient *mqttclient.MqttClient
+	Debug       bool
+	Port        int
+	Host        string
+	ConfigPath  string
+	Errors      metrics.EWMA
+	App         *iris.Framework
+	Config      *viper.Viper
+	Logger      zap.Logger
+	MqttClient  *mqttclient.MqttClient
+	RedisClient *redisclient.RedisClient
 }
 
 // GetApp returns a new arkadiko API Application
@@ -85,9 +87,12 @@ func (app *App) configureApplication() {
 
 	// MQTT Route
 	a.Post("/sendmqtt/:topic", SendMqttHandler(app))
+	a.Post("/authorize_user", AuthorizeUsersHandler(app))
+	a.Post("/unauthorize_user", UnauthorizeUsersHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 
+	app.RedisClient = redisclient.GetRedisClient()
 	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil)
 
 	go func() {
