@@ -26,31 +26,34 @@ func TestSendMqtt(t *testing.T) {
 		g.It("Should respond with 200 for a valid message", func() {
 			a := GetDefaultTestApp()
 			var jsonPayload JSON
-			testJSON := `{"topic": "test topic", "payload": {"message": "hello"}}`
-			payload := `{"message":"hello"}`
+			testJSON := `{"message": "hello"}`
+			response := `{"topic": "test", "payload": {"message":"hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/sendmqtt", t, jsonPayload)
+			res := PostJSON(a, "/sendmqtt/test", t, jsonPayload)
 
 			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
-			res.Body().Equal(payload)
+			res.Body().Equal(response)
 		})
 
-		g.It("Should respond with 400 if missing topic", func() {
+		g.It("Should respond with 200 for a valid message with hierarchical topic", func() {
 			a := GetDefaultTestApp()
 			var jsonPayload JSON
-			testJSON := `{"topi": "test topic", "payload": {"message": "hello"}}`
+			testJSON := `{"message": "hello"}`
+			response := `{"topic": "test/topic", "payload": {"message":"hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/sendmqtt", t, jsonPayload)
+			url := "/sendmqtt/test%2Ftopic"
+			res := PostJSON(a, url, t, jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(400)
+			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
+			res.Body().Equal(response)
 		})
 
-		g.It("Should respond with 400 if missing payload", func() {
+		g.It("Should respond with 400 if malformed JSON", func() {
 			a := GetDefaultTestApp()
 			var jsonPayload JSON
-			testJSON := `{"topic": "test topic", "payloa": {"message": "hello"}}`
+			testJSON := `{"message": "hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/sendmqtt", t, jsonPayload)
+			res := PostJSON(a, "/sendmqtt/test%2Ftopic", t, jsonPayload)
 
 			g.Assert(res.Raw().StatusCode).Equal(400)
 		})

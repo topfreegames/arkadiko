@@ -9,6 +9,8 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
 
 	"github.com/kataras/iris"
 )
@@ -18,33 +20,34 @@ func failWith(status int, message string, c *iris.Context) {
 	c.Write(message)
 }
 
-type sendMqttPayload struct {
-	Topic   string `json:"topic"`
-	Payload JSON   `json:"payload"`
-}
-
 // SendMqttHandler is the handler responsible for sending messages to mqtt
 func SendMqttHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
-		var jsonPayload sendMqttPayload
-		err := json.Unmarshal(c.RequestCtx.Request.Body(), &jsonPayload)
+		if string(c.RequestCtx.Request.Body()[:]) == "null" {
+			failWith(400, "Invalid JSON", c)
+			return
+		}
+		var msgPayload map[string]interface{}
+		err := json.Unmarshal(c.RequestCtx.Request.Body(), &msgPayload)
 		if err != nil {
 			failWith(400, err.Error(), c)
 			return
 		}
-		if jsonPayload.Topic == "" || len(jsonPayload.Payload) == 0 {
-			failWith(400, "Missing topic or payload", c)
-			return
-		}
 
-		b, err := json.Marshal(jsonPayload.Payload)
+		topic, err := url.QueryUnescape(c.Param("topic"))
 		if err != nil {
 			failWith(400, err.Error(), c)
 			return
 		}
-		workingString := string(b[:])
 
-		err = app.MqttClient.SendMessage(jsonPayload.Topic, string(b[:]))
+		b, err := json.Marshal(msgPayload)
+		if err != nil {
+			failWith(400, err.Error(), c)
+			return
+		}
+		workingString := fmt.Sprintf(`{"topic": "%s", "payload": %v}`, topic, string(b[:]))
+
+		err = app.MqttClient.SendMessage(topic, string(b[:]))
 		if err != nil {
 			failWith(400, err.Error(), c)
 			return

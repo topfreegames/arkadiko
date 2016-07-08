@@ -27,13 +27,15 @@ To specify host, port and configuration file you may call arkadiko as follows:
 
 ### Features
 
-Arkadiko receives MQTT messages on the route `/sendmqtt` and expects the body to be a JSON payload with two parameters, `topic`, a string, and `payload`, which should be a JSON parameter.
+Arkadiko receives MQTT messages on the route `/sendmqtt/:topic` and expects the body to be a JSON payload. This payload is the message that will be sent to the MQTT server.
+
+There is a small gotcha to sending hierarchical topics, the slashes must be escaped in the URL, so the called URL should be something like `/sendmqtt/top%2Flevel`.
 
 #### Example
 
-`echo '{"topic": "test2", "payload": {"message": "hello", "number": 1} }' | curl -d @- localhost:8890/sendmqtt`
+`echo '{"message": "hello", "number": 1}' | curl -d @- localhost:8890/sendmqtt/topic`
 
-Sends the MQTT message `{"message":"hello","number":1}` to the topic `test2`
+Sends the MQTT message `{"message":"hello","number":1}` to the topic `topic`
 
 ### Testing
 
