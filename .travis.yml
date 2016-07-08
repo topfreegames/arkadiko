@@ -32,3 +32,6 @@ before_script:
 script:
   - make coverage
   - $HOME/gopath/bin/goveralls -coverprofile coverage-all.out -service=travis-ci
+
+after_success:
+  - ./push_to_docker.sh

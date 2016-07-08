@@ -5,3 +5,8 @@ services:
     image: toke/mosquitto
     ports:
       - "1883:1883"
+
+  redis:
+    image: redis:3.2
+    ports:
+      - "6379:6379"
