@@ -1,6 +1,7 @@
 # Arkadiko
 
 [![Build Status](https://travis-ci.org/topfreegames/arkadiko.svg?branch=master)](https://travis-ci.org/topfreegames/arkadiko)
+[![Coverage Status](https://coveralls.io/repos/github/topfreegames/arkadiko/badge.svg?branch=master)](https://coveralls.io/github/topfreegames/arkadiko?branch=master)
 
 A bridge from HTTP to MQTT developed in go
 
