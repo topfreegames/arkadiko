@@ -12,6 +12,7 @@ sudo: required
 
 services:
   - docker
+  - redis-server
 
 before_install:
   - apt-cache madison docker-engine
