@@ -12,7 +12,6 @@ sudo: required
 
 services:
   - docker
-  - redis-server
 
 before_install:
   - apt-cache madison docker-engine
@@ -27,6 +26,7 @@ install:
   - make setup-ci
 
 before_script:
+  - sudo redis-server ./redis.conf 
   - make run-containers
   - sleep 10
 
