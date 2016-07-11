@@ -23,13 +23,21 @@ type RedisClient struct {
 	Pool   *redis.Pool
 }
 
-func GetRedisClient(redisHost string, redisPort int) *RedisClient {
+func GetRedisClient(redisHost string, redisPort int, redisPass string) *RedisClient {
 	once.Do(func() {
 		client = &RedisClient{
 			Logger: zap.NewJSON(zap.WarnLevel),
 		}
 		redisAddress := fmt.Sprintf("%s:%d", redisHost, redisPort)
 		client.Pool = redis.NewPool(func() (redis.Conn, error) {
+			if viper.GetString("redis.password") != "" {
+				c, err := redis.Dial("tcp", fmt.Sprintf("%s:%d", viper.GetString("redis.host"),
+					viper.GetInt("redis.port")), redis.DialPassword(viper.GetString("redis.password")))
+				if err != nil {
+					client.Logger.Error(err.Error())
+				}
+				return c, err
+			}
 			c, err := redis.Dial("tcp", redisAddress)
 			if err != nil {
 				if err != nil {

@@ -63,6 +63,7 @@ func (app *App) Configure() {
 
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
+	app.Config.SetDefault("redis.password", "")
 }
 
 func (app *App) loadConfiguration() {
@@ -92,7 +93,7 @@ func (app *App) configureApplication() {
 
 	app.Errors = metrics.NewEWMA15()
 
-	app.RedisClient = redisclient.GetRedisClient(app.Config.GetString("redis.host"), app.Config.GetInt("redis.port"))
+	app.RedisClient = redisclient.GetRedisClient(app.Config.GetString("redis.host"), app.Config.GetInt("redis.port"), app.Config.GetString("redis.password"))
 	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil)
 
 	go func() {

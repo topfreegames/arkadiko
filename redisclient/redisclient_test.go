@@ -22,7 +22,7 @@ func TestRedisClient(t *testing.T) {
 
 	g.Describe("Redis Client", func() {
 		g.It("It should set and get without error", func() {
-			rc := GetRedisClient("localhost", 4444)
+			rc := GetRedisClient("localhost", 4444, "")
 			_, err := rc.Pool.Get().Do("set", "teste", 1)
 			Expect(err).To(BeNil())
 			res, err := redis.Int(rc.Pool.Get().Do("get", "teste"))
