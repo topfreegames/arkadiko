@@ -41,7 +41,7 @@ func TestSendMqtt(t *testing.T) {
 			testJSON := `{"message": "hello"}`
 			response := `{"topic": "test/topic", "payload": {"message":"hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			url := "/sendmqtt/test%2Ftopic"
+			url := "/sendmqtt/test/topic"
 			res := PostJSON(a, url, t, jsonPayload)
 
 			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
@@ -53,7 +53,7 @@ func TestSendMqtt(t *testing.T) {
 			var jsonPayload JSON
 			testJSON := `{"message": "hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/sendmqtt/test%2Ftopic", t, jsonPayload)
+			res := PostJSON(a, "/sendmqtt/test/topic", t, jsonPayload)
 
 			g.Assert(res.Raw().StatusCode).Equal(400)
 		})

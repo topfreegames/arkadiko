@@ -83,11 +83,10 @@ func (app *App) configureApplication() {
 	app.App = iris.New()
 	a := app.App
 
-	a.Config.DisablePathEscape = false
 	a.Get("/healthcheck", HealthCheckHandler(app))
 
 	// MQTT Route
-	a.Post("/sendmqtt/:topic", SendMqttHandler(app))
+	a.Post("/sendmqtt/*topic", SendMqttHandler(app))
 	a.Post("/authorize_user", AuthorizeUsersHandler(app))
 	a.Post("/unauthorize_user", UnauthorizeUsersHandler(app))
 

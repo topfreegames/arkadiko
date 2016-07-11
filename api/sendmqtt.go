@@ -10,9 +10,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 
 	"github.com/kataras/iris"
+	"github.com/uber-go/zap"
 )
 
 func failWith(status int, message string, c *iris.Context) {
@@ -34,7 +34,7 @@ func SendMqttHandler(app *App) func(c *iris.Context) {
 			return
 		}
 
-		topic, err := url.QueryUnescape(c.Param("topic"))
+		topic := c.Param("topic")[1:len(c.Param("topic"))]
 		if err != nil {
 			failWith(400, err.Error(), c)
 			return
@@ -46,6 +46,7 @@ func SendMqttHandler(app *App) func(c *iris.Context) {
 			return
 		}
 		workingString := fmt.Sprintf(`{"topic": "%s", "payload": %v}`, topic, string(b[:]))
+		app.Logger.Info("sending message on topic", zap.String("topic", topic), zap.String("payload", string(b[:])))
 
 		err = app.MqttClient.SendMessage(topic, string(b[:]))
 		if err != nil {
