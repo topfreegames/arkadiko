@@ -22,6 +22,6 @@ ENV ARKADIKO_MQTTSERVER_PASS admin
 ENV ARKADIKO_REDIS_HOST localhost
 ENV ARKADIKO_REDIS_PORT 6379
 ENV ARKADIKO_REDIS_MAXPOLLSIZE 20
-ENV ARKADIKO_REDIS_PASSWORD
+ENV ARKADIKO_REDIS_PASSWORD ""
 
 CMD /go/bin/arkadiko start --bind 0.0.0.0 --port 8890 --config /go/src/github.com/topfreegames/arkadiko/config/local.yml
