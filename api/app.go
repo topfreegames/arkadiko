@@ -54,7 +54,7 @@ func GetApp(host string, port int, configPath string, debug bool) *App {
 
 // Configure instantiates the required dependencies for arkadiko Api Application
 func (app *App) Configure() {
-	app.Logger = zap.NewJSON(zap.WarnLevel)
+	app.Logger = zap.NewJSON(zap.InfoLevel)
 
 	app.setConfigurationDefaults()
 	app.loadConfiguration()

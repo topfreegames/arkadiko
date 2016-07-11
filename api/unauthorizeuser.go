@@ -42,6 +42,7 @@ func UnauthorizeUsersHandler(app *App) func(c *iris.Context) {
 				c.SetStatusCode(iris.StatusInternalServerError)
 				return
 			}
+			app.Logger.Info("unauthorized user into rooms", zap.String("user", jsonPayload.UserId), zap.String("room", topic))
 		}
 		c.SetStatusCode(iris.StatusOK)
 	}
