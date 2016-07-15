@@ -7,7 +7,10 @@
 package mqttclient
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"sync"
 	"time"
@@ -53,7 +56,7 @@ func (mc *MqttClient) SendMessage(topic string, message string) error {
 }
 
 func (mc *MqttClient) configure() {
-	mc.Logger = zap.NewJSON(zap.WarnLevel)
+	mc.Logger = zap.NewJSON(zap.InfoLevel)
 
 	mc.setConfigurationDefaults()
 	mc.loadConfiguration()
@@ -65,6 +68,7 @@ func (mc *MqttClient) setConfigurationDefaults() {
 	mc.Config.SetDefault("mqttserver.port", 1883)
 	mc.Config.SetDefault("mqttserver.user", "admin")
 	mc.Config.SetDefault("mqttserver.pass", "admin")
+	mc.Config.SetDefault("mqttserver.ca_cert_file", "")
 }
 
 func (mc *MqttClient) loadConfiguration() {
@@ -86,9 +90,31 @@ func (mc *MqttClient) configureClient() {
 }
 
 func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
-	mc.Logger.Debug("Initializing mqtt client")
+	mc.Logger.Info("Initializing mqtt client", zap.String("host", mc.MqttServerHost),
+		zap.Int("port", mc.MqttServerPort), zap.String("ca_cert_file", mc.Config.GetString("mqttserver.ca_cert_file")))
 
-	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", mc.MqttServerHost, mc.MqttServerPort)).SetClientID("arkadiko")
+	useTls := mc.Config.GetBool("mqttserver.usetls")
+
+	protocol := "tcp"
+	if useTls {
+		protocol = "ssl"
+	}
+	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s:%d", protocol, mc.MqttServerHost, mc.MqttServerPort)).SetClientID("arkadiko")
+
+	if useTls {
+		mc.Logger.Info("using tls", zap.Bool("insecure_skip_verify", mc.Config.GetBool("mqttserver.insecure_tls")))
+		certpool := x509.NewCertPool()
+		if mc.Config.GetString("mqttserver.ca_cert_file") != "" {
+			pemCerts, err := ioutil.ReadFile(mc.Config.GetString("mqttserver.ca_cert_file"))
+			if err == nil {
+				certpool.AppendCertsFromPEM(pemCerts)
+			} else {
+				mc.Logger.Error(err.Error())
+			}
+		}
+		tlsConfig := &tls.Config{InsecureSkipVerify: mc.Config.GetBool("mqttserver.insecure_tls"), ClientAuth: tls.NoClientCert, RootCAs: certpool}
+		opts.SetTLSConfig(tlsConfig)
+	}
 	opts.SetUsername(mc.Config.GetString("mqttserver.user"))
 	opts.SetPassword(mc.Config.GetString("mqttserver.pass"))
 	opts.SetKeepAlive(3 * time.Second)
@@ -100,7 +126,7 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	c := mc.MqttClient
 
 	if token := c.Connect(); token.Wait() && token.Error() != nil {
-		mc.Logger.Fatal(fmt.Sprintf("%v", token.Error()))
+		mc.Logger.Fatal("Error connecting to mqttserver", zap.Error(token.Error()))
 	}
 
 	mc.Logger.Info(fmt.Sprintf("Successfully connected to mqtt server at %s:%d!",

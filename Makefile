@@ -45,10 +45,9 @@ run-containers:
 kill-containers:
 	@cd test_containers && docker-compose stop && cd ..
 
-run-tests: kill-redis redis kill-containers run-containers
+run-tests: kill-containers run-containers
 	@make coverage
 	@make kill-containers
-	@make kill-redis
 
 coverage:
 	@echo "mode: count" > coverage-all.out
