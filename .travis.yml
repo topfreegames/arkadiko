@@ -26,7 +26,6 @@ install:
   - make setup-ci
 
 before_script:
-  - sudo redis-server ./redis.conf 
   - make run-containers
   - sleep 10
 
