@@ -5,7 +5,7 @@ MAINTAINER TFG Co <backend@tfgco.com>
 EXPOSE 8890
 
 RUN apk update
-RUN apk add git
+RUN apk add git nginx supervisor apache2-utils make g++
 
 RUN go get -u github.com/Masterminds/glide/...
 
@@ -23,5 +23,12 @@ ENV ARKADIKO_REDIS_HOST localhost
 ENV ARKADIKO_REDIS_PORT 6379
 ENV ARKADIKO_REDIS_MAXPOLLSIZE 20
 ENV ARKADIKO_REDIS_PASSWORD ""
+ENV USE_BASICAUTH false
+ENV BASICAUTH_USERNAME arkadiko
+ENV BASICAUTH_PASSWORD arkadiko
 
-CMD /go/bin/arkadiko start --bind 0.0.0.0 --port 8890 --config /go/src/github.com/topfreegames/arkadiko/config/local.yml
+RUN mkdir -p /etc/nginx/sites-enabled
+ADD ./docker/supervisord-arkadiko.conf /etc/supervisord-arkadiko.conf
+ADD ./docker/nginx_conf /etc/nginx/nginx.conf
+
+CMD /bin/sh -l -c docker/start.sh
