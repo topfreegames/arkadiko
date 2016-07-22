@@ -23,6 +23,8 @@ type unauthorizationPayload struct {
 // UnauthorizeUsersHandler is the handler responsible for unauthorizing users in rooms
 func UnauthorizeUsersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		redisConn := app.RedisClient.Pool.Get()
+		defer redisConn.Close()
 		var jsonPayload authorizationPayload
 		err := json.Unmarshal(c.RequestCtx.Request.Body(), &jsonPayload)
 		if err != nil {
@@ -36,7 +38,7 @@ func UnauthorizeUsersHandler(app *App) func(c *iris.Context) {
 		for _, topic := range jsonPayload.Rooms {
 			app.Logger.Debug("unauthorizing user", zap.String("user", jsonPayload.UserId), zap.String("room", topic))
 			unauthorizationString := fmt.Sprintf("%s-%s", jsonPayload.UserId, topic)
-			_, err := app.RedisClient.Pool.Get().Do("del", unauthorizationString)
+			_, err := redisConn.Do("del", unauthorizationString)
 			if err != nil {
 				app.Logger.Error(err.Error())
 				c.SetStatusCode(iris.StatusInternalServerError)

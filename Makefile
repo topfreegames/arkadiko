@@ -45,6 +45,8 @@ run-containers:
 kill-containers:
 	@cd test_containers && docker-compose stop && cd ..
 
+test: run-tests
+
 run-tests: kill-containers run-containers
 	@make coverage
 	@make kill-containers

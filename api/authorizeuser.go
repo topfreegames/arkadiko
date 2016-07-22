@@ -23,6 +23,8 @@ type authorizationPayload struct {
 // AuthorizeUsersHandler is the handler responsible for authorizing users in rooms
 func AuthorizeUsersHandler(app *App) func(c *iris.Context) {
 	return func(c *iris.Context) {
+		redisConn := app.RedisClient.Pool.Get()
+		defer redisConn.Close()
 		var jsonPayload authorizationPayload
 		err := json.Unmarshal(c.RequestCtx.Request.Body(), &jsonPayload)
 		if err != nil {
@@ -36,7 +38,7 @@ func AuthorizeUsersHandler(app *App) func(c *iris.Context) {
 		for _, topic := range jsonPayload.Rooms {
 			app.Logger.Debug("authorizing user", zap.String("user", jsonPayload.UserId), zap.String("room", topic))
 			authorizationString := fmt.Sprintf("%s-%s", jsonPayload.UserId, topic)
-			_, err := app.RedisClient.Pool.Get().Do("set", authorizationString, 2)
+			_, err := redisConn.Do("set", authorizationString, 2)
 			if err != nil {
 				app.Logger.Error(err.Error())
 				c.SetStatusCode(iris.StatusInternalServerError)
