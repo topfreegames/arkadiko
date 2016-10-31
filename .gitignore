@@ -2,3 +2,4 @@ arkadiko
 coverage-all.out
 coverage.out
 *.coverprofile
+vendor/
