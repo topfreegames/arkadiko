@@ -7,17 +7,23 @@ A bridge from HTTP to MQTT developed in go
 
 ### Installing
 
-`make setup`
+```
+make setup
+```
 
 ### Usage
 
 First you need to build:
 
-`make build`
+```
+make build
+```
 
 Then you can run arkadiko by running.
 
-`./arkadiko start`
+```
+./arkadiko start
+```
 
 You can specify the configuration file and other parameters by setting the flags.
 
@@ -25,6 +31,13 @@ To specify host, port and configuration file you may call arkadiko as follows:
 
 `./arkadiko start --bind 0.0.0.0 --port 8890 --config ./config/local.yml`
 
+You can also run Arkadiko with:
+
+```
+make run
+```
+
+It will start Arkadiko in port 8890 with config file `/config/local.yml`
 
 ### Features
 
@@ -40,7 +53,11 @@ Sends the MQTT message `{"message":"hello","number":1}` to the topic `topic`
 
 ### Testing
 
-Run `make run-tests`
+Run `make test`
+
+### Coverage
+
+Run `make coverage coverage-html`
 
 ### The name
 
