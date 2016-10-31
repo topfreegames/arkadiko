@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	"github.com/uber-go/zap"
 
 	. "github.com/franela/goblin"
 	. "github.com/onsi/gomega"
@@ -18,6 +19,12 @@ import (
 
 func TestMqttClient(t *testing.T) {
 	g := Goblin(t)
+	logger := zap.New(
+		zap.NewJSONEncoder(),
+		zap.FatalLevel,
+	).With(
+		zap.String("source", "app"),
+	)
 
 	// special hook for gomega
 	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
@@ -28,7 +35,7 @@ func TestMqttClient(t *testing.T) {
 			var onConnectHandler = func(client mqtt.Client) {
 				connected = true
 			}
-			mc := GetMqttClient("../config/test.yml", onConnectHandler)
+			mc := GetMqttClient("../config/test.yml", onConnectHandler, logger)
 
 			g.Assert(mc.ConfigPath).Equal("../config/test.yml")
 			for !connected {

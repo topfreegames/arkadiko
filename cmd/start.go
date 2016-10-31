@@ -10,11 +10,13 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/arkadiko/api"
+	"github.com/uber-go/zap"
 )
 
 var host string
 var port int
 var debug bool
+var fast bool
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -23,14 +25,33 @@ var startCmd = &cobra.Command{
 	Long: `Starts arkadiko server with the specified arguments. You can use
 	environment variables to override configuration keys.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		app := api.GetApp(
+		ll := zap.InfoLevel
+		if debug {
+			ll = zap.DebugLevel
+		}
+		logger := zap.New(
+			zap.NewJSONEncoder(),
+			ll,
+		).With(
+			zap.String("source", "app"),
+		)
+		app, err := api.GetApp(
 			host,
 			port,
 			ConfigFile,
 			debug,
+			fast,
+			logger,
 		)
 
-		app.Start()
+		if err != nil {
+			logger.Fatal("Could not get arkadiko application.", zap.Error(err))
+		}
+
+		err = app.Start()
+		if err != nil {
+			logger.Fatal("Could not start arkadiko application.", zap.Error(err))
+		}
 	},
 }
 
@@ -40,4 +61,5 @@ func init() {
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind arkadiko to")
 	startCmd.Flags().IntVarP(&port, "port", "p", 8890, "Port to bind arkadiko to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
+	startCmd.Flags().BoolVarP(&fast, "fast", "f", true, "FastHTTP server mode")
 }

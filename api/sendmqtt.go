@@ -10,51 +10,57 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 
-	"github.com/kataras/iris"
+	"github.com/labstack/echo"
+	"github.com/topfreegames/arkadiko/log"
 	"github.com/uber-go/zap"
 )
 
-func failWith(status int, message string, c *iris.Context) {
-	c.SetStatusCode(status)
-	c.Write(message)
-}
-
 // SendMqttHandler is the handler responsible for sending messages to mqtt
-func SendMqttHandler(app *App) func(c *iris.Context) {
-	return func(c *iris.Context) {
-		if string(c.RequestCtx.Request.Body()[:]) == "null" {
-			failWith(400, "Invalid JSON", c)
-			return
+func SendMqttHandler(app *App) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		lg := app.Logger.With(
+			zap.String("handler", "SendMqttHandler"),
+		)
+
+		body := c.Request().Body()
+		b, err := ioutil.ReadAll(body)
+		if err != nil {
+			return FailWith(400, err.Error(), c)
 		}
+
+		if string(b) == "null" {
+
+			return FailWith(400, "Invalid JSON", c)
+		}
+
 		var msgPayload map[string]interface{}
-		err := json.Unmarshal(c.RequestCtx.Request.Body(), &msgPayload)
+		err = WithSegment("payload", c, func() error {
+			return json.Unmarshal(b, &msgPayload)
+		})
 		if err != nil {
-			failWith(400, err.Error(), c)
-			return
+			return FailWith(400, err.Error(), c)
 		}
 
-		topic := c.Param("topic")[1:len(c.Param("topic"))]
+		topic := c.ParamValues()[0]
 		if err != nil {
-			failWith(400, err.Error(), c)
-			return
+			return FailWith(400, err.Error(), c)
 		}
 
-		b, err := json.Marshal(msgPayload)
+		b, err = json.Marshal(msgPayload)
 		if err != nil {
-			failWith(400, err.Error(), c)
-			return
+			return FailWith(400, err.Error(), c)
 		}
-		workingString := fmt.Sprintf(`{"topic": "%s", "payload": %v}`, topic, string(b[:]))
-		app.Logger.Info("sending message on topic", zap.String("topic", topic), zap.String("payload", string(b[:])))
-
-		err = app.MqttClient.SendMessage(topic, string(b[:]))
+		workingString := fmt.Sprintf(`{"topic": "%s", "payload": %v}`, topic, string(b))
+		log.I(lg, "sending message on topic", func(cm log.CM) {
+			cm.Write(zap.String("topic", topic), zap.String("payload", string(b)))
+		})
+		err = app.MqttClient.SendMessage(topic, string(b))
 		if err != nil {
-			failWith(400, err.Error(), c)
-			return
+			return FailWith(400, err.Error(), c)
 		}
-
-		c.SetStatusCode(iris.StatusOK)
-		c.Write(workingString)
+		return c.String(http.StatusOK, workingString)
 	}
 }

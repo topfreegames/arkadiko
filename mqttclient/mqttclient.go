@@ -34,13 +34,13 @@ var client *MqttClient
 var once sync.Once
 
 // GetMqttClient creates the mqttclient and returns it
-func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler) *MqttClient {
+func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l zap.Logger) *MqttClient {
 	once.Do(func() {
 		client = &MqttClient{
 			ConfigPath: configPath,
 			Config:     viper.New(),
 		}
-		client.configure()
+		client.configure(l)
 		client.start(onConnectHandler)
 	})
 	return client
@@ -48,15 +48,18 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler) *M
 
 // SendMessage sends the message with the given payload to topic
 func (mc *MqttClient) SendMessage(topic string, message string) error {
+	fmt.Println("CAMILA CAMILA CAMILA a")
 	if token := mc.MqttClient.Publish(topic, 2, false, message); token.Wait() && token.Error() != nil {
+		fmt.Println("CAMILA CAMILA CAMILA b")
 		mc.Logger.Error(fmt.Sprintf("%v", token.Error()))
 		return token.Error()
 	}
+	fmt.Println("CAMILA CAMILA CAMILA c")
 	return nil
 }
 
-func (mc *MqttClient) configure() {
-	mc.Logger = zap.NewJSON(zap.InfoLevel)
+func (mc *MqttClient) configure(l zap.Logger) {
+	mc.Logger = l
 
 	mc.setConfigurationDefaults()
 	mc.loadConfiguration()

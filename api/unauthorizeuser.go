@@ -10,8 +10,10 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
-	"github.com/kataras/iris"
+	"github.com/labstack/echo"
+	"github.com/topfreegames/arkadiko/log"
 	"github.com/uber-go/zap"
 )
 
@@ -21,31 +23,50 @@ type unauthorizationPayload struct {
 }
 
 // UnauthorizeUsersHandler is the handler responsible for unauthorizing users in rooms
-func UnauthorizeUsersHandler(app *App) func(c *iris.Context) {
-	return func(c *iris.Context) {
+func UnauthorizeUsersHandler(app *App) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		lg := app.Logger.With(
+			zap.String("handler", "UnauthorizeUsersHandler"),
+		)
+		log.D(lg, "Retrieving redis connection...")
 		redisConn := app.RedisClient.Pool.Get()
 		defer redisConn.Close()
+
+		var err error
 		var jsonPayload authorizationPayload
-		err := json.Unmarshal(c.RequestCtx.Request.Body(), &jsonPayload)
+		err = WithSegment("payload", c, func() error {
+			body := c.Request().Body()
+			b, err := ioutil.ReadAll(body)
+			if err != nil {
+				return err
+			}
+			return json.Unmarshal(b, &jsonPayload)
+		})
 		if err != nil {
-			failWith(400, err.Error(), c)
-			return
+			return FailWith(400, err.Error(), c)
 		}
 		if jsonPayload.UserId == "" || len(jsonPayload.Rooms) == 0 {
-			failWith(400, "Missing user or rooms", c)
-			return
+			return FailWith(400, "Missing user or rooms", c)
 		}
 		for _, topic := range jsonPayload.Rooms {
-			app.Logger.Debug("unauthorizing user", zap.String("user", jsonPayload.UserId), zap.String("room", topic))
+			log.D(lg, "unauthorizing user", func(cm log.CM) {
+				cm.Write(zap.String("user", jsonPayload.UserId), zap.String("room", topic))
+			})
 			unauthorizationString := fmt.Sprintf("%s-%s", jsonPayload.UserId, topic)
-			_, err := redisConn.Do("del", unauthorizationString)
+			err = WithSegment("redis", c, func() error {
+				_, err = redisConn.Do("del", unauthorizationString)
+				return err
+			})
 			if err != nil {
-				app.Logger.Error(err.Error())
-				c.SetStatusCode(iris.StatusInternalServerError)
-				return
+				log.E(lg, "Failed to unauthorize user in redis.", func(cm log.CM) {
+					cm.Write(zap.Error(err))
+				})
+				return FailWith(500, err.Error(), c)
 			}
-			app.Logger.Info("unauthorized user into rooms", zap.String("user", jsonPayload.UserId), zap.String("room", topic))
+			log.I(lg, "unauthorized user into rooms", func(cm log.CM) {
+				cm.Write(zap.String("user", jsonPayload.UserId), zap.String("room", topic))
+			})
 		}
-		c.SetStatusCode(iris.StatusOK)
+		return SucceedWith(map[string]interface{}{}, c)
 	}
 }

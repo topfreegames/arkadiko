@@ -12,3 +12,7 @@ redis:
   port: 6379
   password: ""
   maxPoolSize: 20
+newrelic:
+  key: ""
+sentry:
+  url: ""

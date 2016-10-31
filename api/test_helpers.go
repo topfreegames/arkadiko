@@ -12,12 +12,26 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect"
+	echostandard "github.com/labstack/echo/engine/standard"
+	"github.com/uber-go/zap"
 )
 
 // GetDefaultTestApp returns a new arkadiko API Application bound to 0.0.0.0:8888 for test
 func GetDefaultTestApp() *App {
-	app := GetApp("0.0.0.0", 8890, "../config/test.yml", true)
-	app.Configure()
+	logger := zap.New(
+		zap.NewJSONEncoder(),
+		zap.FatalLevel,
+	).With(
+		zap.String("source", "app"),
+	)
+	app, err := GetApp("0.0.0.0", 8890, "../config/test.yml", true, false, logger)
+	if err != nil {
+		logger.Fatal("Could not get test application.", zap.Error(err))
+	}
+	err = app.Configure()
+	if err != nil {
+		logger.Fatal("Could not get test application.", zap.Error(err))
+	}
 	return app
 }
 
@@ -48,12 +62,13 @@ func sendJSON(app *App, method, url string, t *testing.T, payload JSON) *httpexp
 }
 
 func sendRequest(app *App, method, url string, t *testing.T) *httpexpect.Request {
-	handler := app.App.NoListen().Handler
+	app.Engine.SetHandler(app.App)
+	handler := http.Handler(app.Engine.(*echostandard.Server))
 
 	e := httpexpect.WithConfig(httpexpect.Config{
 		Reporter: httpexpect.NewAssertReporter(t),
 		Client: &http.Client{
-			Transport: httpexpect.NewFastBinder(handler),
+			Transport: httpexpect.NewBinder(handler),
 		},
 	})
 

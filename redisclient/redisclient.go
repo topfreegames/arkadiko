@@ -18,15 +18,17 @@ import (
 var once sync.Once
 var client *RedisClient
 
+// RedisClient struct
 type RedisClient struct {
 	Logger zap.Logger
 	Pool   *redis.Pool
 }
 
-func GetRedisClient(redisHost string, redisPort int, redisPass string) *RedisClient {
+// GetRedisClient get a redisclient
+func GetRedisClient(redisHost string, redisPort int, redisPass string, l zap.Logger) *RedisClient {
 	once.Do(func() {
 		client = &RedisClient{
-			Logger: zap.NewJSON(zap.WarnLevel),
+			Logger: l,
 		}
 		redisAddress := fmt.Sprintf("%s:%d", redisHost, redisPort)
 		client.Pool = redis.NewPool(func() (redis.Conn, error) {
