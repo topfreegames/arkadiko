@@ -8,4 +8,4 @@
 package api
 
 // VERSION identifies Arkadiko's current version
-var VERSION = "0.1.0"
+var VERSION = "0.2.0"

@@ -77,3 +77,6 @@ cross-darwin:
 	@echo "Building for darwin-x86_64..."
 	@env GOOS=darwin GOARCH=amd64 go build -o ./bin/arkadiko-darwin-x86_64 ./main.go
 	@$(MAKE) cross-exec
+
+cross-exec:
+	@chmod +x bin/*
