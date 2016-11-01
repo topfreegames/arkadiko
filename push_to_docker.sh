@@ -3,7 +3,7 @@
 VERSION=$(cat ./api/version.go | grep "var VERSION" | awk ' { print $4 } ' | sed s/\"//g)
 
 docker build -t arkadiko .
-docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 docker tag arkadiko:latest tfgco/arkadiko:$VERSION.$TRAVIS_BUILD_NUMBER
 docker push tfgco/arkadiko:$VERSION.$TRAVIS_BUILD_NUMBER
 
