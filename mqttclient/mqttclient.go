@@ -48,13 +48,10 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l 
 
 // SendMessage sends the message with the given payload to topic
 func (mc *MqttClient) SendMessage(topic string, message string) error {
-	fmt.Println("CAMILA CAMILA CAMILA a")
 	if token := mc.MqttClient.Publish(topic, 2, false, message); token.Wait() && token.Error() != nil {
-		fmt.Println("CAMILA CAMILA CAMILA b")
 		mc.Logger.Error(fmt.Sprintf("%v", token.Error()))
 		return token.Error()
 	}
-	fmt.Println("CAMILA CAMILA CAMILA c")
 	return nil
 }
 
