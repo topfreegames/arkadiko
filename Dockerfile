@@ -1,3 +1,9 @@
+# arkadiko
+# https://github.com/topfreegames/arkadiko
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license
+# Copyright © 2016 Top Free Games <backend@tfgco.com>
+
 FROM golang:1.6.2-alpine
 
 MAINTAINER TFG Co <backend@tfgco.com>
@@ -5,15 +11,16 @@ MAINTAINER TFG Co <backend@tfgco.com>
 EXPOSE 8890
 
 RUN apk update
-RUN apk add git apache2-utils make g++
+RUN apk add bash git make g++ apache2-utils
 
-RUN go get -u github.com/Masterminds/glide/...
+# http://stackoverflow.com/questions/34729748/installed-go-binary-not-found-in-path-on-alpine-linux-docker
+RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
 
-ADD . /go/src/github.com/topfreegames/arkadiko
+ADD bin/arkadiko-linux-x86_64 /go/bin/arkadiko
+RUN chmod +x /go/bin/arkadiko
 
-WORKDIR /go/src/github.com/topfreegames/arkadiko
-RUN glide install
-RUN go install github.com/topfreegames/arkadiko
+RUN mkdir -p /home/arkadiko/
+ADD ./config/local.yml /home/arkadiko/local.yml
 
 ENV ARKADIKO_MQTTSERVER_HOST localhost
 ENV ARKADIKO_MQTTSERVER_PORT 1883
@@ -27,4 +34,4 @@ ENV USE_BASICAUTH false
 ENV ARKADIKO_BASICAUTH_USERNAME ""
 ENV ARKADIKO_BASICAUTH_PASSWORD ""
 
-CMD /go/bin/arkadiko start --bind 0.0.0.0 --port 8890 --config ./config/local.yml
+CMD /go/bin/arkadiko start --bind 0.0.0.0 --port 8890 --config /home/arkadiko/local.yml
