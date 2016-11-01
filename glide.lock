@@ -1,8 +1,10 @@
 hash: 864b26c9c183ca2c031149311944aa77a208290fa9bdb6169ad6deace6a449a1
-updated: 2016-10-31T17:24:42.225751187-02:00
+updated: 2016-11-01T14:13:48.172075034-02:00
 imports:
 - name: github.com/ajg/form
   version: 523a5da1a92f01b01f840b61689c0340a0243532
+- name: github.com/certifi/gocertifi
+  version: a61bf5eafa3aee233ec8043e9da052447e5463dd
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
@@ -16,14 +18,14 @@ imports:
 - name: github.com/fatih/structs
   version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/franela/goblin
-  version: efa9910a3ea4ccb7ee4b977571318af2e51ba05f
+  version: 8d578d7c5a9fb6491ecfc8af86ff7ad7ec81d181
 - name: github.com/fsnotify/fsnotify
   version: fd9ec7deca8bf46ecd2a795baaacf2b3a9be1197
 - name: github.com/garyburd/redigo
   version: 80f7de34463b0ed3d7c61303e5619efe1b227f92
   subpackages:
-  - redis
   - internal
+  - redis
 - name: github.com/gavv/gojsondiff
   version: 36046c6e558e7f854ebd3fd97d1e9812ebe8709b
   subpackages:
@@ -43,10 +45,10 @@ imports:
   subpackages:
   - hcl/ast
   - hcl/parser
-  - hcl/token
-  - json/parser
   - hcl/scanner
   - hcl/strconv
+  - hcl/token
+  - json/parser
   - json/scanner
   - json/token
 - name: github.com/imkira/go-interpol
@@ -66,20 +68,20 @@ imports:
 - name: github.com/kr/fs
   version: 2788f0dbd16903de03cb8186e5c7d97b69ad387b
 - name: github.com/labstack/echo
-  version: 276394d973b8cdf2569c18ae5dc0edbb5455f8e5
+  version: b0111506968ec0bd6f196d2b346db92d0478ee09
   subpackages:
-  - engine/fasthttp
-  - engine/standard
-  - middleware
   - context
   - engine
+  - engine/fasthttp
+  - engine/standard
   - log
+  - middleware
 - name: github.com/labstack/gommon
   version: 2d272df536d051e737aea353b86c979d6e88bce0
   subpackages:
-  - log
   - bytes
   - color
+  - log
   - random
 - name: github.com/magiconair/properties
   version: 0723e352fa358f9322c938cc2dadda874e9151a9
@@ -90,13 +92,45 @@ imports:
 - name: github.com/mitchellh/mapstructure
   version: f3009df150dadf309fdee4a54ed65c124afad715
 - name: github.com/moul/http2curl
-  version: c984a4ec331f8ef0e5cd782975a97c92bd8ab40c
+  version: 4e24498b31dba4683efb9d35c1c8a91e2eda28c8
 - name: github.com/newrelic/go-agent
   version: 372845e16294c9fa73951b27d5631b601643fc51
+  subpackages:
+  - internal
+  - internal/jsonx
+  - internal/logger
+  - internal/sysinfo
+  - internal/utilization
 - name: github.com/onsi/ginkgo
-  version: a8ccd817611666211fdf6e6a752174a0db8374a8
+  version: 38caab951a9ff39f0e61294a1dbaaa074a39228b
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/containernode
+  - internal/failer
+  - internal/leafnodes
+  - internal/remote
+  - internal/spec
+  - internal/specrunner
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - types
 - name: github.com/onsi/gomega
-  version: ff4bc6b6f9f5affa66635cd04d31d2a7ee21ffd6
+  version: 4dfabf7db2e4147ec99a86db32b2f2a3484cfee8
+  subpackages:
+  - format
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/testingtsupport
+  - matchers
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
+  - types
 - name: github.com/pelletier/go-buffruneio
   version: df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d
 - name: github.com/pelletier/go-toml
@@ -158,18 +192,18 @@ imports:
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
 - name: golang.org/x/crypto
-  version: b2fa06b6af4b7c9bfeb8569ab7b17f04550717bf
+  version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
-  - ssh
   - curve25519
   - ed25519
   - ed25519/internal/edwards25519
+  - ssh
 - name: golang.org/x/net
-  version: 4cfeeeb61ae8daa2a4b06572024786e56f23504c
+  version: 541150ac4f433e755f5663eba5d888c2fa347343
   subpackages:
+  - context
   - publicsuffix
   - websocket
-  - context
 - name: golang.org/x/sys
   version: c200b10b5d5e122be351b67af224adc6128af5bf
   subpackages:
@@ -181,4 +215,4 @@ imports:
   - unicode/norm
 - name: gopkg.in/yaml.v2
   version: a5b47d31c556af34a302ce5d659e6fea44d90de0
-devImports: []
+testImports: []
