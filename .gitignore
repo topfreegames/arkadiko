@@ -3,3 +3,4 @@ coverage-all.out
 coverage.out
 *.coverprofile
 vendor/
+bin/
