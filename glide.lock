@@ -1,5 +1,5 @@
-hash: 864b26c9c183ca2c031149311944aa77a208290fa9bdb6169ad6deace6a449a1
-updated: 2016-11-01T14:13:48.172075034-02:00
+hash: c960514819456e7076657dd0fca4265e92c9c8796e13a4567d629e0a988e6e19
+updated: 2016-11-07T01:23:57.318323377-02:00
 imports:
 - name: github.com/ajg/form
   version: 523a5da1a92f01b01f840b61689c0340a0243532
@@ -68,7 +68,7 @@ imports:
 - name: github.com/kr/fs
   version: 2788f0dbd16903de03cb8186e5c7d97b69ad387b
 - name: github.com/labstack/echo
-  version: b0111506968ec0bd6f196d2b346db92d0478ee09
+  version: 04e6901d05b58ddbae579a6252a3d1bb3f334adc
   subpackages:
   - context
   - engine
@@ -145,6 +145,8 @@ imports:
   - difflib
 - name: github.com/rcrowley/go-metrics
   version: ab2277b1c5d15c3cba104e9cbddbdfc622df5ad8
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sergi/go-diff
   version: 97b2266dfe4bd4ea1b81a463322f04f8b724801e
   subpackages:

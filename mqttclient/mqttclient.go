@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/uber-go/zap"
 )
@@ -99,7 +100,9 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	if useTls {
 		protocol = "ssl"
 	}
-	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s:%d", protocol, mc.MqttServerHost, mc.MqttServerPort)).SetClientID("arkadiko")
+
+	clientId := fmt.Sprintf("arkadiko-%s", uuid.NewV4().String())
+	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s:%d", protocol, mc.MqttServerHost, mc.MqttServerPort)).SetClientID(clientId)
 
 	if useTls {
 		mc.Logger.Info("using tls", zap.Bool("insecure_skip_verify", mc.Config.GetBool("mqttserver.insecure_tls")))

@@ -13,3 +13,4 @@ import:
 - package: github.com/labstack/echo
 - package: github.com/newrelic/go-agent
 - package: github.com/getsentry/raven-go
+- package: github.com/satori/go.uuid
