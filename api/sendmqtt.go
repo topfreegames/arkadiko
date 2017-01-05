@@ -70,13 +70,11 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		})
 
 		mqttLatency = afterMqttTime.Sub(beforeMqttTime)
-		lg = lg.With(zap.Duration("mqttLatency", mqttLatency))
+		c.Set("mqttLatency", mqttLatency)
 
 		if err != nil {
-			log.E(lg, "Error sending message on topic")
 			return FailWith(400, err.Error(), c)
 		}
-		log.I(lg, "Success sending message on topic")
 		return c.String(http.StatusOK, workingString)
 	}
 }
