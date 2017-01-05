@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo"
 	"github.com/topfreegames/arkadiko/log"
@@ -53,14 +54,29 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
+		lg = lg.With(zap.String("topic", topic), zap.String("payload", string(b)))
 		workingString := fmt.Sprintf(`{"topic": "%s", "payload": %v}`, topic, string(b))
-		log.I(lg, "sending message on topic", func(cm log.CM) {
-			cm.Write(zap.String("topic", topic), zap.String("payload", string(b)))
+
+		log.I(lg, "sending message on topic")
+
+		var mqttLatency time.Duration
+		var beforeMqttTime, afterMqttTime time.Time
+
+		err = WithSegment("mqtt", c, func() error {
+			beforeMqttTime = time.Now()
+			err = app.MqttClient.SendMessage(topic, string(b))
+			afterMqttTime = time.Now()
+			return err
 		})
-		err = app.MqttClient.SendMessage(topic, string(b))
+
+		mqttLatency = afterMqttTime.Sub(beforeMqttTime)
+		lg = lg.With(zap.Duration("mqttLatency", mqttLatency))
+
 		if err != nil {
+			log.E(lg, "Error sending message on topic")
 			return FailWith(400, err.Error(), c)
 		}
+		log.I(lg, "Success sending message on topic")
 		return c.String(http.StatusOK, workingString)
 	}
 }
