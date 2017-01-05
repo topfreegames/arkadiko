@@ -187,7 +187,7 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		mqttLatencyInterface := c.Get("mqttLatency")
 		if mqttLatencyInterface != nil {
 			mqttLatency := mqttLatencyInterface.(time.Duration)
-			reqLog = l.With(zap.Duration("mqttLatency", mqttLatency))
+			reqLog = reqLog.With(zap.Duration("mqttLatency", mqttLatency))
 		}
 
 		//request failed
