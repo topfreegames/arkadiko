@@ -5,62 +5,78 @@
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-package api
+package api_test
 
-//import (
-//"encoding/json"
-//"net/http"
-//"testing"
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 
-//. "github.com/franela/goblin"
-//. "github.com/onsi/gomega"
-//)
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/topfreegames/arkadiko/api"
+	. "github.com/topfreegames/arkadiko/testing"
+)
 
-//func TestAuthorizeUsersHandler(t *testing.T) {
-//g := Goblin(t)
+var _ = Describe("Authorize Handler", func() {
+	Describe("Specs", func() {
+		Describe("Should authorize users", func() {
+			It("Should respond with 200 for a valid message", func() {
+				a := GetDefaultTestApp()
+				var jsonPayload map[string]interface{}
+				testJSON := `{"userId": "felipe", "rooms": ["room1", "room2"]}`
+				json.Unmarshal([]byte(testJSON), &jsonPayload)
 
-//// special hook for gomega
-//RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
-//g.Describe("Should authorize users", func() {
-//g.It("Should respond with 200 for a valid message", func() {
-//a := GetDefaultTestApp()
-//var jsonPayload JSON
-//testJSON := `{"userId": "felipe", "rooms": ["room1", "room2"]}`
-//json.Unmarshal([]byte(testJSON), &jsonPayload)
+				status, _ := PostJSON(a, "/authorize_user", jsonPayload)
+				Expect(status).To(Equal(http.StatusOK))
+			})
 
-//status, _ := PostJSON(a, "/authorize_user", jsonPayload)
-//g.Assert(status).Equal(http.StatusOK)
-//})
+			It("Should respond with 400 if malformed map[string]interface{}", func() {
+				a := GetDefaultTestApp()
+				var jsonPayload map[string]interface{}
+				testJSON := `{"message": "hello"}}`
+				json.Unmarshal([]byte(testJSON), &jsonPayload)
 
-//g.It("Should respond with 400 if malformed JSON", func() {
-//a := GetDefaultTestApp()
-//var jsonPayload JSON
-//testJSON := `{"message": "hello"}}`
-//json.Unmarshal([]byte(testJSON), &jsonPayload)
+				status, _ := PostJSON(a, "/authorize_user", jsonPayload)
+				Expect(status).To(Equal(400))
+			})
 
-//status, _ := PostJSON(a, "/authorize_user", jsonPayload)
-//g.Assert(status).Equal(400)
-//})
+			It("Should respond with 400 if no userId is provided", func() {
+				a := GetDefaultTestApp()
+				var jsonPayload map[string]interface{}
+				testJSON := `{"message": "hello", "rooms": ["room1"]}`
+				json.Unmarshal([]byte(testJSON), &jsonPayload)
 
-//g.It("Should respond with 400 if no userId is provided", func() {
-//a := GetDefaultTestApp()
-//var jsonPayload JSON
-//testJSON := `{"message": "hello", "rooms": ["room1"]}`
-//json.Unmarshal([]byte(testJSON), &jsonPayload)
+				status, _ := PostJSON(a, "/authorize_user", jsonPayload)
+				Expect(status).To(Equal(400))
+			})
 
-//status, _ := PostJSON(a, "/authorize_user", jsonPayload)
-//g.Assert(status).Equal(400)
-//})
+			It("Should respond with 400 if no rooms is provided", func() {
+				a := GetDefaultTestApp()
+				var jsonPayload map[string]interface{}
+				testJSON := `{"userId": "hello", "roo": ["room1"]}`
+				json.Unmarshal([]byte(testJSON), &jsonPayload)
 
-//g.It("Should respond with 400 if no rooms is provided", func() {
-//a := GetDefaultTestApp()
-//var jsonPayload JSON
-//testJSON := `{"userId": "hello", "roo": ["room1"]}`
-//json.Unmarshal([]byte(testJSON), &jsonPayload)
+				status, _ := PostJSON(a, "/authorize_user", jsonPayload)
+				Expect(status).To(Equal(400))
+			})
+		})
+	})
 
-//status, _ := PostJSON(a, "/authorize_user", jsonPayload)
-//g.Assert(status).Equal(400)
-//})
-
-//})
-//}
+	Describe("Perf", func() {
+		HTTPMeasure("authorize user", func(data map[string]interface{}) {
+			testJSON := map[string]interface{}{
+				"userId": "felipe",
+				"rooms":  []string{"room1", "room2"},
+			}
+			payload, err := json.Marshal(testJSON)
+			Expect(err).NotTo(HaveOccurred())
+			data["payload"] = payload
+		}, func(ts *httptest.Server, data map[string]interface{}) {
+			payload := string(data["payload"].([]byte))
+			app := data["app"].(*api.App)
+			status, body := PostBody(app, "/authorize_user", payload)
+			Expect(status).To(Equal(http.StatusOK), string(body))
+		}, 0.01)
+	})
+})

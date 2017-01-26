@@ -1,5 +1,5 @@
-hash: 349d25fbf636d22623fe1c097291da5f01f40301f7afe2d653258f0a658015ad
-updated: 2017-01-24T19:51:55.682044781-02:00
+hash: 696e370976220f505a9a628acb4ef7e341a9b4e2d73bbf43938c817ffbf4ab85
+updated: 2017-01-26T13:50:39.001157251-02:00
 imports:
 - name: github.com/certifi/gocertifi
   version: a61bf5eafa3aee233ec8043e9da052447e5463dd
@@ -9,8 +9,6 @@ imports:
   version: 13afcbe8e41508479762a90e9242577210c2ca8d
   subpackages:
   - packets
-- name: github.com/franela/goblin
-  version: 8d578d7c5a9fb6491ecfc8af86ff7ad7ec81d181
 - name: github.com/fsnotify/fsnotify
   version: fd9ec7deca8bf46ecd2a795baaacf2b3a9be1197
 - name: github.com/garyburd/redigo

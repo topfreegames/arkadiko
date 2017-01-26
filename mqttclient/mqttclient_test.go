@@ -4,45 +4,58 @@
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-package mqttclient
+package mqttclient_test
 
 import (
-	"testing"
 	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	"github.com/topfreegames/arkadiko/mqttclient"
 	"github.com/uber-go/zap"
 
-	. "github.com/franela/goblin"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-func TestMqttClient(t *testing.T) {
-	g := Goblin(t)
-	logger := zap.New(
-		zap.NewJSONEncoder(),
-		zap.FatalLevel,
-	).With(
-		zap.String("source", "app"),
-	)
+var _ = Describe("MQTT Client", func() {
+	Describe("Specs", func() {
 
-	// special hook for gomega
-	RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+		logger := zap.New(
+			zap.NewJSONEncoder(),
+			zap.FatalLevel,
+		).With(
+			zap.String("source", "app"),
+		)
 
-	g.Describe("Mqtt Client", func() {
-		g.It("It should send message and receive nil", func() {
-			connected := false
-			var onConnectHandler = func(client mqtt.Client) {
-				connected = true
-			}
-			mc := GetMqttClient("../config/test.yml", onConnectHandler, logger)
+		Describe("Specs", func() {
+			It("It should send message and receive nil", func() {
+				connected := false
+				var onConnectHandler = func(client mqtt.Client) {
+					connected = true
+				}
+				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
 
-			g.Assert(mc.ConfigPath).Equal("../config/test.yml")
-			for !connected {
-				time.Sleep(100 * time.Millisecond)
-			}
-			err := mc.SendMessage("test", `{"message": "hello"}`)
-			Expect(err).To(BeNil())
+				Expect(mc.ConfigPath).To(Equal("../config/test.yml"))
+				for !connected {
+					time.Sleep(100 * time.Millisecond)
+				}
+				err := mc.SendMessage("test", `{"message": "hello"}`)
+				Expect(err).To(BeNil())
+			})
+		})
+
+		Describe("Perf", func() {
+			Measure("it should send message", func(b Benchmarker) {
+				var onConnectHandler = func(client mqtt.Client) {}
+				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
+
+				runtime := b.Time("runtime", func() {
+					err := mc.SendMessage("test", `{"message": "hello"}`)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				Expect(runtime.Seconds()).Should(BeNumerically("<", 0.01), "Sending message shouldn't take too long.")
+			}, 200)
 		})
 	})
-}
+})
