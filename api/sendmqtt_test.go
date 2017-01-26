@@ -54,7 +54,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 		})
 	})
 	Describe("Perf", func() {
-		HTTPMeasure("Should send fast to MQTT", func(data map[string]interface{}) {
+		HTTPMeasure("send to MQTT", func(data map[string]interface{}) {
 			testJSON := map[string]interface{}{
 				"message": "hello",
 			}

@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"testing"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/types"
@@ -129,7 +128,7 @@ func request(method, path, body string, app *api.App) (int, string) {
 }
 
 // Get returns a test request against specified URL
-func Get(app *api.App, url string, t *testing.T) (int, string) {
+func Get(app *api.App, url string) (int, string) {
 	return request("GET", url, "", app)
 }
 

@@ -5,38 +5,51 @@
 // http://www.opensource.org/licenses/mit-license
 // Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-package api
+package api_test
 
-//import (
-//"net/http"
-//"testing"
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 
-//. "github.com/franela/goblin"
-//. "github.com/onsi/gomega"
-//)
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/topfreegames/arkadiko/api"
+	. "github.com/topfreegames/arkadiko/testing"
+)
 
-//func TestHealthcheckHandler(t *testing.T) {
-//g := Goblin(t)
+var _ = Describe("Healthcheck Handler", func() {
+	Describe("Specs", func() {
+		It("Should respond with default WORKING string", func() {
+			a := GetDefaultTestApp()
+			status, body := Get(a, "/healthcheck")
 
-//// special hook for gomega
-//RegisterFailHandler(func(m string, _ ...int) { g.Fail(m) })
+			Expect(status).To(Equal(http.StatusOK))
+			Expect(body).To(Equal("WORKING"))
+		})
 
-//g.Describe("Healthcheck Handler", func() {
-//g.It("Should respond with default WORKING string", func() {
-//a := GetDefaultTestApp()
-//status, body := Get(a, "/healthcheck", t)
+		It("Should respond with customized WORKING string", func() {
+			a := GetDefaultTestApp()
+			a.Config.SetDefault("healthcheck.workingText", "OTHERWORKING")
+			status, body := Get(a, "/healthcheck")
 
-//g.Assert(status).Equal(http.StatusOK)
-//g.Assert(body).Equal("WORKING")
-//})
+			Expect(status).To(Equal(http.StatusOK))
+			Expect(body).To(Equal("OTHERWORKING"))
+		})
+	})
 
-//g.It("Should respond with customized WORKING string", func() {
-//a := GetDefaultTestApp()
-//a.Config.SetDefault("healthcheck.workingText", "OTHERWORKING")
-//status, body := Get(a, "/healthcheck", t)
-
-//g.Assert(status).Equal(http.StatusOK)
-//g.Assert(body).Equal("OTHERWORKING")
-//})
-//})
-//}
+	Describe("Perf", func() {
+		HTTPMeasure("healthcheck", func(data map[string]interface{}) {
+			testJSON := map[string]interface{}{
+				"message": "hello",
+			}
+			payload, err := json.Marshal(testJSON)
+			Expect(err).NotTo(HaveOccurred())
+			data["payload"] = payload
+		}, func(ts *httptest.Server, data map[string]interface{}) {
+			app := data["app"].(*api.App)
+			status, body := Get(app, "/healthcheck")
+			Expect(status).To(Equal(http.StatusOK), string(body))
+		}, 0.01)
+	})
+})
