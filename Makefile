@@ -15,8 +15,9 @@ setup:
 	@glide install
 
 setup-ci:
-	@sudo add-apt-repository -y ppa:masterminds/glide && sudo apt-get update
-	@sudo apt-get install -y glide
+	@go get github.com/onsi/ginkgo/ginkgo
+	@go get -u github.com/Masterminds/glide/...
+	@go get -v github.com/spf13/cobra/cobra
 	@go get github.com/topfreegames/goose/cmd/goose
 	@go get github.com/mattn/goveralls
 	@glide install
