@@ -48,14 +48,32 @@ kill-containers:
 test: run-tests
 
 run-tests: kill-containers run-containers
-	@make coverage
+	@make run-test coverage
 	@make kill-containers
 
-coverage:
-	@echo "mode: count" > coverage-all.out
-	@$(foreach pkg,$(PACKAGES),\
-		ARKADIKO_REDIS_PORT=4444 go test -coverprofile=coverage.out -covermode=count $(pkg) || exit 1 &&\
-		tail -n +2 coverage.out >> coverage-all.out;)
+run-test:
+	@ginkgo -r --cover .
+
+test-coverage-run:
+	@mkdir -p _build
+	@-rm -rf _build/test-coverage-all.out
+	@echo "mode: count" > _build/test-coverage-all.out
+	@bash -c 'for f in $$(find . -name "*.coverprofile"); do tail -n +2 $$f >> _build/test-coverage-all.out; done'
+
+test-coverage-func:
+	@echo
+	@echo "=-=-=-=-=-=-="
+	@echo "Test Coverage"
+	@echo "=-=-=-=-=-=-="
+	@go tool cover -func=_build/test-coverage-all.out
+
+test-coverage-html cover:
+	@go tool cover -html=_build/test-coverage-all.out
+
+test-coverage-write-html:
+	@go tool cover -html=_build/test-coverage-all.out -o _build/test-coverage.html
+
+coverage: test-coverage-run test-coverage-func
 
 coverage-html:
 	@go tool cover -html=coverage-all.out
