@@ -33,7 +33,6 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 
 		if string(b) == "null" {
-
 			return FailWith(400, "Invalid JSON", c)
 		}
 
