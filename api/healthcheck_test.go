@@ -50,6 +50,6 @@ var _ = Describe("Healthcheck Handler", func() {
 			app := data["app"].(*api.App)
 			status, body := Get(app, "/healthcheck")
 			Expect(status).To(Equal(http.StatusOK), string(body))
-		}, 0.01)
+		}, 0.05)
 	})
 })

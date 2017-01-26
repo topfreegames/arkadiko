@@ -13,3 +13,5 @@ import:
 - package: github.com/newrelic/go-agent
 - package: github.com/getsentry/raven-go
 - package: github.com/satori/go.uuid
+- package: google.golang.org/grpc
+  version: ^1.0.5

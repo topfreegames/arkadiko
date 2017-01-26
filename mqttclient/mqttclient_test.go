@@ -68,7 +68,7 @@ var _ = Describe("MQTT Client", func() {
 				mc.MqttClient.Subscribe(topic, 2, onMessageHandler)
 
 				//Have to wait so the goroutine can call our handler
-				time.Sleep(1 * time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 
 				Expect(msg).NotTo(BeNil())
 				Expect(msg.Retained()).To(BeTrue())
@@ -87,7 +87,7 @@ var _ = Describe("MQTT Client", func() {
 				})
 
 				Expect(runtime.Seconds()).Should(BeNumerically("<", 0.01), "Sending message shouldn't take too long.")
-			}, 200)
+			}, 20)
 		})
 	})
 })

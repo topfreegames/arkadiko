@@ -38,13 +38,14 @@ var _ = Describe("Redis Client", func() {
 	Describe("Perf", func() {
 		Measure("it should set item fast", func(b Benchmarker) {
 			rc := redisclient.GetRedisClient("localhost", 4444, "", logger)
+			r := rc.Pool.Get()
 
 			runtime := b.Time("runtime", func() {
-				_, err := rc.Pool.Get().Do("set", "teste", 1)
+				_, err := r.Do("set", "teste", 1)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			Expect(runtime.Seconds()).Should(BeNumerically("<", 0.05), "Redis client set shouldn't take too long.")
-		}, 200)
+		}, 20)
 	})
 })

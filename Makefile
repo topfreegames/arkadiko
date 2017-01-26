@@ -9,6 +9,7 @@ GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegame
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
 
 setup:
+	@go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 	@go get github.com/onsi/ginkgo/ginkgo
 	@go get -u github.com/Masterminds/glide/...
 	@go get -v github.com/spf13/cobra/cobra
@@ -39,7 +40,7 @@ kill-redis:
 	@-redis-cli -p 4444 shutdown
 
 run:
-	@go run main.go start
+	@go run main.go start --rpc
 
 run-containers:
 	@cd test_containers && docker-compose up -d && cd ..
@@ -100,3 +101,6 @@ cross-darwin:
 
 cross-exec:
 	@chmod +x bin/*
+
+build_proto:
+	@protoc --go_out=plugins=grpc:. ./remote/mqtt.proto

@@ -77,6 +77,6 @@ var _ = Describe("Authorize Handler", func() {
 			app := data["app"].(*api.App)
 			status, body := PostBody(app, "/authorize_user", payload)
 			Expect(status).To(Equal(http.StatusOK), string(body))
-		}, 0.05)
+		}, 0.1)
 	})
 })

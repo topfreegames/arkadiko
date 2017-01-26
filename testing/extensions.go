@@ -14,10 +14,13 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	"google.golang.org/grpc"
+
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/types"
 	"github.com/onsi/gomega"
 	"github.com/topfreegames/arkadiko/api"
+	"github.com/topfreegames/arkadiko/remote"
 	"github.com/uber-go/zap"
 )
 
@@ -55,6 +58,34 @@ func GetDefaultTestApp() *api.App {
 		logger.Fatal("Could not get test application.", zap.Error(err))
 	}
 	return app
+}
+
+// GetDefaultTestServer returns a new arkadiko RPC Server bound to 0.0.0.0:8891 for test
+func GetDefaultTestServer() (*remote.Server, error) {
+	logger := zap.New(
+		zap.NewJSONEncoder(),
+		zap.FatalLevel,
+	).With(
+		zap.String("source", "rpc"),
+	)
+	server, err := remote.NewServer("0.0.0.0", 8891, "../config/test.yml", false, logger)
+	if err != nil {
+		return nil, err
+	}
+	return server, nil
+}
+
+//GetRPCTestClient returns a connected test client
+func GetRPCTestClient() (remote.MQTTClient, error) {
+	opts := []grpc.DialOption{
+		grpc.WithInsecure(),
+	}
+
+	conn, err := grpc.Dial("0.0.0.0:8891", opts...)
+	if err != nil {
+		return nil, err
+	}
+	return remote.NewMQTTClient(conn), err
 }
 
 //HTTPMeasure runs the specified specs in an http test
@@ -108,7 +139,7 @@ func measure(description string, setup func(map[string]interface{}), f func(*htt
 				gomega.BeNumerically("<", timeout),
 				fmt.Sprintf("%s shouldn't take too long.", description),
 			)
-		}, 200)
+		}, 20)
 	})
 
 	return true

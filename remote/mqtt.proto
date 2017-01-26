@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package remote;
+
+// Interface exported by the server.
+service MQTT {
+  // Sends the specified message to the specified topic.
+  //
+  // returns true if the message has been sent.
+  rpc SendMessage(Message) returns (SendMessageResult) {}
+}
+
+//Message represents a message being sent to MQTT
+message Message {
+  string topic = 1;
+  string payload = 2;
+  bool retained = 3;
+}
+
+//MessageResult represents the result of a message being sent
+message SendMessageResult {
+  string topic = 1;
+  bool retained = 2;
+}

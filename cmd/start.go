@@ -10,12 +10,16 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/arkadiko/api"
+	"github.com/topfreegames/arkadiko/remote"
 	"github.com/uber-go/zap"
 )
 
 var host string
 var port int
 var debug bool
+var rpc bool
+var rpcHost string
+var rpcPort int
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -41,9 +45,28 @@ var startCmd = &cobra.Command{
 			debug,
 			logger,
 		)
-
 		if err != nil {
 			logger.Fatal("Could not get arkadiko application.", zap.Error(err))
+		}
+
+		if rpc {
+			rpcServer, err := remote.NewServer(
+				rpcHost,
+				rpcPort,
+				ConfigFile,
+				debug,
+				logger.With(zap.String("source", "rpc")),
+			)
+			if err != nil {
+				logger.Fatal("Could not get arkadiko RPC server.", zap.Error(err))
+			}
+
+			go func(rpcs *remote.Server) {
+				err := rpcs.Start()
+				if err != nil {
+					logger.Fatal("Could not start arkadiko RPC server.", zap.Error(err))
+				}
+			}(rpcServer)
 		}
 
 		err = app.Start()
@@ -59,4 +82,7 @@ func init() {
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind arkadiko to")
 	startCmd.Flags().IntVarP(&port, "port", "p", 8890, "Port to bind arkadiko to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
+	startCmd.Flags().BoolVarP(&rpc, "rpc", "r", false, "Enable GRPC remote procedure call")
+	startCmd.Flags().StringVarP(&rpcHost, "rpc-bind", "i", "0.0.0.0", "Host to bind arkadiko RPC to")
+	startCmd.Flags().IntVarP(&rpcPort, "rpc-port", "t", 8891, "Port to bind arkadiko RPC to")
 }
