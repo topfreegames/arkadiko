@@ -51,6 +51,14 @@ There is a small gotcha to sending hierarchical topics, the slashes must be esca
 
 Sends the MQTT message `{"message":"hello","number":1}` to the topic `topic`
 
+### Retained Messages
+
+Arkadiko supports sending retained messages. In order to specify that the message being published should be retained you just need to send a querystring parameter of `retained=true`, like:
+
+`echo '{"message": "hello", "number": 1}' | curl -d @- localhost:8890/sendmqtt/topic?retained=true`
+
+Any other value passed to retained (`retained=false, retained=else, retained=`) will be treated as false.
+
 ### Testing
 
 Run `make test`

@@ -49,9 +49,34 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l 
 
 // SendMessage sends the message with the given payload to topic
 func (mc *MqttClient) SendMessage(topic string, message string) error {
-	if token := mc.MqttClient.Publish(topic, 2, false, message); token.Wait() && token.Error() != nil {
+	return mc.publishMessage(topic, message, false)
+}
+
+// SendRetainedMessage sends the message with the given payload to topic
+func (mc *MqttClient) SendRetainedMessage(topic string, message string) error {
+	return mc.publishMessage(topic, message, true)
+}
+
+func (mc *MqttClient) publishMessage(topic string, message string, retained bool) error {
+	if token := mc.MqttClient.Publish(topic, 2, retained, message); token.Wait() && token.Error() != nil {
 		mc.Logger.Error(fmt.Sprintf("%v", token.Error()))
 		return token.Error()
+	}
+	return nil
+}
+
+//WaitForConnection to mqtt server
+func (mc *MqttClient) WaitForConnection(timeout int) error {
+	start := time.Now()
+	timedOut := func() bool {
+		return time.Now().Sub(start) > time.Duration(timeout)*time.Millisecond
+	}
+	for !mc.MqttClient.IsConnected() || timedOut() {
+		time.Sleep(1 * time.Millisecond)
+	}
+
+	if timedOut() {
+		return fmt.Errorf("Connection to MQTT timed out.")
 	}
 	return nil
 }
@@ -94,17 +119,17 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	mc.Logger.Info("Initializing mqtt client", zap.String("host", mc.MqttServerHost),
 		zap.Int("port", mc.MqttServerPort), zap.String("ca_cert_file", mc.Config.GetString("mqttserver.ca_cert_file")))
 
-	useTls := mc.Config.GetBool("mqttserver.usetls")
+	useTLS := mc.Config.GetBool("mqttserver.usetls")
 
 	protocol := "tcp"
-	if useTls {
+	if useTLS {
 		protocol = "ssl"
 	}
 
-	clientId := fmt.Sprintf("arkadiko-%s", uuid.NewV4().String())
-	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s:%d", protocol, mc.MqttServerHost, mc.MqttServerPort)).SetClientID(clientId)
+	clientID := fmt.Sprintf("arkadiko-%s", uuid.NewV4().String())
+	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s:%d", protocol, mc.MqttServerHost, mc.MqttServerPort)).SetClientID(clientID)
 
-	if useTls {
+	if useTLS {
 		mc.Logger.Info("using tls", zap.Bool("insecure_skip_verify", mc.Config.GetBool("mqttserver.insecure_tls")))
 		certpool := x509.NewCertPool()
 		if mc.Config.GetString("mqttserver.ca_cert_file") != "" {

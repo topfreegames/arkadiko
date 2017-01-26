@@ -51,7 +51,7 @@ run-tests: kill-containers run-containers
 	@make run-test coverage
 	@make kill-containers
 
-run-test:
+run-test unit:
 	@ginkgo -r --cover .
 
 test-coverage-run:

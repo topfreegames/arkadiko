@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	uuid "github.com/satori/go.uuid"
 	"github.com/topfreegames/arkadiko/mqttclient"
 	"github.com/uber-go/zap"
 
@@ -36,11 +37,42 @@ var _ = Describe("MQTT Client", func() {
 				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
 
 				Expect(mc.ConfigPath).To(Equal("../config/test.yml"))
-				for !connected {
-					time.Sleep(100 * time.Millisecond)
-				}
-				err := mc.SendMessage("test", `{"message": "hello"}`)
+
+				err := mc.WaitForConnection(100)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = mc.SendMessage("test", `{"message": "hello"}`)
 				Expect(err).To(BeNil())
+			})
+
+			It("It should send retained message", func() {
+				mc := mqttclient.GetMqttClient("../config/test.yml", nil, logger)
+
+				Expect(mc.ConfigPath).To(Equal("../config/test.yml"))
+
+				err := mc.WaitForConnection(100)
+				Expect(err).NotTo(HaveOccurred())
+
+				topic := uuid.NewV4().String()
+				expectedMsg := `{"message": "hello"}`
+
+				err = mc.SendRetainedMessage(topic, expectedMsg)
+				Expect(err).NotTo(HaveOccurred())
+				//TODO: REALLY need to wait 50ms?
+				time.Sleep(50 * time.Millisecond)
+
+				var msg mqtt.Message
+				var onMessageHandler = func(client mqtt.Client, message mqtt.Message) {
+					msg = message
+				}
+				mc.MqttClient.Subscribe(topic, 2, onMessageHandler)
+
+				//Have to wait so the goroutine can call our handler
+				time.Sleep(1 * time.Millisecond)
+
+				Expect(msg).NotTo(BeNil())
+				Expect(msg.Retained()).To(BeTrue())
+				Expect(string(msg.Payload())).To(Equal(expectedMsg))
 			})
 		})
 

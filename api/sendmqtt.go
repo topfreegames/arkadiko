@@ -26,6 +26,12 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 			zap.String("handler", "SendMqttHandler"),
 		)
 
+		retainedValue := c.QueryParam("retained")
+		retained := true
+		if retainedValue != "true" {
+			retained = false
+		}
+
 		body := c.Request().Body
 		b, err := ioutil.ReadAll(body)
 		if err != nil {
@@ -54,7 +60,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 		lg = lg.With(zap.String("topic", topic), zap.String("payload", string(b)))
-		workingString := fmt.Sprintf(`{"topic": "%s", "payload": %v}`, topic, string(b))
+		workingString := fmt.Sprintf(`{"topic": "%s", "retained": %t, "payload": %v}`, topic, retained, string(b))
 
 		log.I(lg, "sending message on topic")
 
@@ -63,7 +69,11 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		err = WithSegment("mqtt", c, func() error {
 			beforeMqttTime = time.Now()
-			err = app.MqttClient.SendMessage(topic, string(b))
+			if retained {
+				err = app.MqttClient.SendRetainedMessage(topic, string(b))
+			} else {
+				err = app.MqttClient.SendMessage(topic, string(b))
+			}
 			afterMqttTime = time.Now()
 			return err
 		})
