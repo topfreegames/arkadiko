@@ -8,11 +8,12 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"github.com/gavv/httpexpect"
-	echostandard "github.com/labstack/echo/engine/standard"
 	"github.com/uber-go/zap"
 )
 
@@ -24,7 +25,7 @@ func GetDefaultTestApp() *App {
 	).With(
 		zap.String("source", "app"),
 	)
-	app, err := GetApp("0.0.0.0", 8890, "../config/test.yml", true, false, logger)
+	app, err := GetApp("0.0.0.0", 8890, "../config/test.yml", false, logger)
 	if err != nil {
 		logger.Fatal("Could not get test application.", zap.Error(err))
 	}
@@ -35,42 +36,39 @@ func GetDefaultTestApp() *App {
 	return app
 }
 
+func request(method, path, body string, app *App) (int, string) {
+	var req *http.Request
+	if body != "" {
+		reader := strings.NewReader(body) //Convert string to reader
+		req, _ = http.NewRequest(method, path, reader)
+	} else {
+		req, _ = http.NewRequest(method, path, nil)
+	}
+	rec := httptest.NewRecorder()
+	app.App.ServeHTTP(rec, req)
+	return rec.Code, rec.Body.String()
+}
+
 // Get returns a test request against specified URL
-func Get(app *App, url string, t *testing.T) *httpexpect.Response {
-	req := sendRequest(app, "GET", url, t)
-	return req.Expect()
+func Get(app *App, url string, t *testing.T) (int, string) {
+	return request("GET", url, "", app)
 }
 
 // PostBody returns a test request against specified URL
-func PostBody(app *App, url string, t *testing.T, payload string) *httpexpect.Response {
-	return sendBody(app, "POST", url, t, payload)
+func PostBody(app *App, url string, payload string) (int, string) {
+	return sendBody(app, "POST", url, payload)
 }
 
-func sendBody(app *App, method string, url string, t *testing.T, payload string) *httpexpect.Response {
-	req := sendRequest(app, method, url, t)
-	return req.WithBytes([]byte(payload)).Expect()
+func sendBody(app *App, method, url, payload string) (int, string) {
+	return request(method, url, payload, app)
 }
 
 // PostJSON returns a test request against specified URL
-func PostJSON(app *App, url string, t *testing.T, payload JSON) *httpexpect.Response {
-	return sendJSON(app, "POST", url, t, payload)
+func PostJSON(app *App, url string, payload JSON) (int, string) {
+	return sendJSON(app, "POST", url, payload)
 }
 
-func sendJSON(app *App, method, url string, t *testing.T, payload JSON) *httpexpect.Response {
-	req := sendRequest(app, method, url, t)
-	return req.WithJSON(payload).Expect()
-}
-
-func sendRequest(app *App, method, url string, t *testing.T) *httpexpect.Request {
-	app.Engine.SetHandler(app.App)
-	handler := http.Handler(app.Engine.(*echostandard.Server))
-
-	e := httpexpect.WithConfig(httpexpect.Config{
-		Reporter: httpexpect.NewAssertReporter(t),
-		Client: &http.Client{
-			Transport: httpexpect.NewBinder(handler),
-		},
-	})
-
-	return e.Request(method, url)
+func sendJSON(app *App, method, url string, payloadJSON JSON) (int, string) {
+	payload, _ := json.Marshal(payloadJSON)
+	return request(method, url, string(payload), app)
 }

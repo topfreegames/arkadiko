@@ -26,7 +26,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 			zap.String("handler", "SendMqttHandler"),
 		)
 
-		body := c.Request().Body()
+		body := c.Request().Body
 		b, err := ioutil.ReadAll(body)
 		if err != nil {
 			return FailWith(400, err.Error(), c)

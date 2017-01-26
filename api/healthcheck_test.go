@@ -24,19 +24,19 @@ func TestHealthcheckHandler(t *testing.T) {
 	g.Describe("Healthcheck Handler", func() {
 		g.It("Should respond with default WORKING string", func() {
 			a := GetDefaultTestApp()
-			res := Get(a, "/healthcheck", t)
+			status, body := Get(a, "/healthcheck", t)
 
-			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
-			res.Body().Equal("WORKING")
+			g.Assert(status).Equal(http.StatusOK)
+			g.Assert(body).Equal("WORKING")
 		})
 
 		g.It("Should respond with customized WORKING string", func() {
 			a := GetDefaultTestApp()
 			a.Config.SetDefault("healthcheck.workingText", "OTHERWORKING")
-			res := Get(a, "/healthcheck", t)
+			status, body := Get(a, "/healthcheck", t)
 
-			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
-			res.Body().Equal("OTHERWORKING")
+			g.Assert(status).Equal(http.StatusOK)
+			g.Assert(body).Equal("OTHERWORKING")
 		})
 	})
 }

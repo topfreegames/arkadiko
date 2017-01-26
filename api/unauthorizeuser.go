@@ -18,7 +18,7 @@ import (
 )
 
 type unauthorizationPayload struct {
-	UserId string   `json:"userId"`
+	UserID string   `json:"userId"`
 	Rooms  []string `json:"rooms"`
 }
 
@@ -35,7 +35,7 @@ func UnauthorizeUsersHandler(app *App) func(c echo.Context) error {
 		var err error
 		var jsonPayload authorizationPayload
 		err = WithSegment("payload", c, func() error {
-			body := c.Request().Body()
+			body := c.Request().Body
 			b, err := ioutil.ReadAll(body)
 			if err != nil {
 				return err
@@ -45,14 +45,14 @@ func UnauthorizeUsersHandler(app *App) func(c echo.Context) error {
 		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
-		if jsonPayload.UserId == "" || len(jsonPayload.Rooms) == 0 {
+		if jsonPayload.UserID == "" || len(jsonPayload.Rooms) == 0 {
 			return FailWith(400, "Missing user or rooms", c)
 		}
 		for _, topic := range jsonPayload.Rooms {
 			log.D(lg, "unauthorizing user", func(cm log.CM) {
-				cm.Write(zap.String("user", jsonPayload.UserId), zap.String("room", topic))
+				cm.Write(zap.String("user", jsonPayload.UserID), zap.String("room", topic))
 			})
-			unauthorizationString := fmt.Sprintf("%s-%s", jsonPayload.UserId, topic)
+			unauthorizationString := fmt.Sprintf("%s-%s", jsonPayload.UserID, topic)
 			err = WithSegment("redis", c, func() error {
 				_, err = redisConn.Do("del", unauthorizationString)
 				return err
@@ -64,7 +64,7 @@ func UnauthorizeUsersHandler(app *App) func(c echo.Context) error {
 				return FailWith(500, err.Error(), c)
 			}
 			log.I(lg, "unauthorized user into rooms", func(cm log.CM) {
-				cm.Write(zap.String("user", jsonPayload.UserId), zap.String("room", topic))
+				cm.Write(zap.String("user", jsonPayload.UserID), zap.String("room", topic))
 			})
 		}
 		return SucceedWith(map[string]interface{}{}, c)

@@ -1,22 +1,14 @@
-hash: c960514819456e7076657dd0fca4265e92c9c8796e13a4567d629e0a988e6e19
-updated: 2016-11-07T01:23:57.318323377-02:00
+hash: 349d25fbf636d22623fe1c097291da5f01f40301f7afe2d653258f0a658015ad
+updated: 2017-01-24T19:51:55.682044781-02:00
 imports:
-- name: github.com/ajg/form
-  version: 523a5da1a92f01b01f840b61689c0340a0243532
 - name: github.com/certifi/gocertifi
   version: a61bf5eafa3aee233ec8043e9da052447e5463dd
-- name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
-  subpackages:
-  - spew
 - name: github.com/dgrijalva/jwt-go
   version: 24c63f56522a87ec5339cc3567883f1039378fdb
 - name: github.com/eclipse/paho.mqtt.golang
   version: 13afcbe8e41508479762a90e9242577210c2ca8d
   subpackages:
   - packets
-- name: github.com/fatih/structs
-  version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
 - name: github.com/franela/goblin
   version: 8d578d7c5a9fb6491ecfc8af86ff7ad7ec81d181
 - name: github.com/fsnotify/fsnotify
@@ -26,20 +18,8 @@ imports:
   subpackages:
   - internal
   - redis
-- name: github.com/gavv/gojsondiff
-  version: 36046c6e558e7f854ebd3fd97d1e9812ebe8709b
-  subpackages:
-  - formatter
-- name: github.com/gavv/httpexpect
-  version: ab5f666af253b969504c317d702c554ecf9493cc
-- name: github.com/gavv/monotime
-  version: 47d58efa69556a936a3c15eb2ed42706d968ab01
 - name: github.com/getsentry/raven-go
   version: b8684db99b339af19aa6f067df3be9de6e995f89
-- name: github.com/google/go-querystring
-  version: 9235644dd9e52eeae6fa48efd539fdc351a0af53
-  subpackages:
-  - query
 - name: github.com/hashicorp/hcl
   version: 8fa153c5b4e9d1ccecda7075821ffc7c1f6d912b
   subpackages:
@@ -51,30 +31,13 @@ imports:
   - json/parser
   - json/scanner
   - json/token
-- name: github.com/imkira/go-interpol
-  version: 5accad8134979a6ac504d456a6c7f1c53da237ca
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
-- name: github.com/klauspost/compress
-  version: 8df558b6cb6f9b445f9586446cfe7223e7d8bd6b
-  subpackages:
-  - flate
-  - gzip
-  - zlib
-- name: github.com/klauspost/cpuid
-  version: 09cded8978dc9e80714c4d85b0322337b0a1e5e0
-- name: github.com/klauspost/crc32
-  version: cb6bfca970f6908083f26f39a79009d608efd5cd
 - name: github.com/kr/fs
   version: 2788f0dbd16903de03cb8186e5c7d97b69ad387b
 - name: github.com/labstack/echo
-  version: 04e6901d05b58ddbae579a6252a3d1bb3f334adc
+  version: 8d504c1b699c757b267255c53b3e5219f9974abc
   subpackages:
-  - context
-  - engine
-  - engine/fasthttp
-  - engine/standard
-  - log
   - middleware
 - name: github.com/labstack/gommon
   version: 2d272df536d051e737aea353b86c979d6e88bce0
@@ -91,8 +54,6 @@ imports:
   version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/mitchellh/mapstructure
   version: f3009df150dadf309fdee4a54ed65c124afad715
-- name: github.com/moul/http2curl
-  version: 4e24498b31dba4683efb9d35c1c8a91e2eda28c8
 - name: github.com/newrelic/go-agent
   version: 372845e16294c9fa73951b27d5631b601643fc51
   subpackages:
@@ -139,18 +100,10 @@ imports:
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/pkg/sftp
   version: 4d0e916071f68db74f8a73926335f809396d6b42
-- name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
-  subpackages:
-  - difflib
 - name: github.com/rcrowley/go-metrics
   version: ab2277b1c5d15c3cba104e9cbddbdfc622df5ad8
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
-- name: github.com/sergi/go-diff
-  version: 97b2266dfe4bd4ea1b81a463322f04f8b724801e
-  subpackages:
-  - diffmatchpatch
 - name: github.com/spf13/afero
   version: 52e4a6cfac46163658bd4f123c49b6ee7dc75f78
   subpackages:
@@ -166,36 +119,19 @@ imports:
   version: 5ccb023bc27df288a957c5e994cd44fd19619465
 - name: github.com/spf13/viper
   version: 651d9d916abc3c3d6a91a12549495caba5edffd2
-- name: github.com/stretchr/testify
-  version: 976c720a22c8eb4eb6a0b4348ad85ad12491a506
-  subpackages:
-  - assert
-  - require
+- name: github.com/tylerb/graceful
+  version: 4df1190835320af7076dfcf27b3d071fd3612caf
 - name: github.com/uber-go/atomic
   version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 - name: github.com/uber-go/zap
   version: f2929c57adb5be8fb03cad9a6912c509a5cb60af
-- name: github.com/valyala/bytebufferpool
-  version: e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7
-- name: github.com/valyala/fasthttp
-  version: 4ee6517626b0549c4a4c85ad7b91acdec1d2af24
-  subpackages:
-  - fasthttputil
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
-- name: github.com/xeipuuv/gojsonpointer
-  version: e0fe6f68307607d540ed8eac07a342c33fa1b54a
-- name: github.com/xeipuuv/gojsonreference
-  version: e02fc20de94c78484cd5ffb007f8af96be030a45
-- name: github.com/xeipuuv/gojsonschema
-  version: 00f9fafb54d2244d291b86ab63d12c38bd5c3886
-- name: github.com/yalp/jsonpath
-  version: 31a79c7593bb93eb10b163650d4a3e6ca190e4dc
-- name: github.com/yudai/golcs
-  version: d1c525dea8ce39ea9a783d33cf08932305373f2c
 - name: golang.org/x/crypto
   version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
   subpackages:
+  - acme
+  - acme/autocert
   - curve25519
   - ed25519
   - ed25519/internal/edwards25519
@@ -204,7 +140,7 @@ imports:
   version: 541150ac4f433e755f5663eba5d888c2fa347343
   subpackages:
   - context
-  - publicsuffix
+  - context/ctxhttp
   - websocket
 - name: golang.org/x/sys
   version: c200b10b5d5e122be351b67af224adc6128af5bf

@@ -16,7 +16,6 @@ import (
 var host string
 var port int
 var debug bool
-var fast bool
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -40,7 +39,6 @@ var startCmd = &cobra.Command{
 			port,
 			ConfigFile,
 			debug,
-			fast,
 			logger,
 		)
 
@@ -61,5 +59,4 @@ func init() {
 	startCmd.Flags().StringVarP(&host, "bind", "b", "0.0.0.0", "Host to bind arkadiko to")
 	startCmd.Flags().IntVarP(&port, "port", "p", 8890, "Port to bind arkadiko to")
 	startCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Debug mode")
-	startCmd.Flags().BoolVarP(&fast, "fast", "f", true, "FastHTTP server mode")
 }

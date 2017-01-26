@@ -15,9 +15,6 @@ import (
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine"
-	"github.com/labstack/echo/engine/fasthttp"
-	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
@@ -44,13 +41,11 @@ type App struct {
 	Logger      zap.Logger
 	MqttClient  *mqttclient.MqttClient
 	RedisClient *redisclient.RedisClient
-	Fast        bool
-	Engine      engine.Server
 	NewRelic    newrelic.Application
 }
 
 // GetApp returns a new arkadiko API Application
-func GetApp(host string, port int, configPath string, debug, fast bool, logger zap.Logger) (*App, error) {
+func GetApp(host string, port int, configPath string, debug bool, logger zap.Logger) (*App, error) {
 	app := &App{
 		Host:       host,
 		Port:       port,
@@ -58,7 +53,6 @@ func GetApp(host string, port int, configPath string, debug, fast bool, logger z
 		Config:     viper.New(),
 		Debug:      debug,
 		MqttClient: nil,
-		Fast:       fast,
 		Logger:     logger,
 	}
 	err := app.Configure()
@@ -164,18 +158,11 @@ func (app *App) configureApplication() error {
 		zap.String("operation", "configureApplication"),
 	)
 
-	app.Engine = standard.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
-	if app.Fast {
-		rb := app.Config.GetInt("api.maxReadBufferSize")
-		engine := fasthttp.New(fmt.Sprintf("%s:%d", app.Host, app.Port))
-		engine.ReadBufferSize = rb
-		app.Engine = engine
-	}
 	app.App = echo.New()
 	a := app.App
 
 	_, w, _ := os.Pipe()
-	a.SetLogOutput(w)
+	a.Logger.SetOutput(w)
 
 	basicAuthUser := app.Config.GetString("basicauth.username")
 	if basicAuthUser != "" {
@@ -195,12 +182,12 @@ func (app *App) configureApplication() error {
 
 	// Routes
 	// Healthcheck
-	a.Get("/healthcheck", HealthCheckHandler(app))
+	a.GET("/healthcheck", HealthCheckHandler(app))
 
 	// MQTT Route
-	a.Post("/sendmqtt/*", SendMqttHandler(app))
-	a.Post("/authorize_user", AuthorizeUsersHandler(app))
-	a.Post("/unauthorize_user", UnauthorizeUsersHandler(app))
+	a.POST("/sendmqtt/*", SendMqttHandler(app))
+	a.POST("/authorize_user", AuthorizeUsersHandler(app))
+	a.POST("/unauthorize_user", UnauthorizeUsersHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
 
@@ -238,7 +225,7 @@ func (app *App) Start() error {
 		zap.String("operation", "Start"),
 	)
 
-	err := app.App.Run(app.Engine)
+	err := app.App.Start(fmt.Sprintf("%s:%d", app.Host, app.Port))
 	if err != nil {
 		log.E(l, "App failed to start.", func(cm log.CM) {
 			cm.Write(

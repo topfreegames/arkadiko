@@ -27,9 +27,9 @@ func TestUnauthorizeUsersHandler(t *testing.T) {
 			var jsonPayload JSON
 			testJSON := `{"userId": "felipe", "rooms": ["room1", "room2"]}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/unauthorize_user", t, jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
+			status, _ := PostJSON(a, "/unauthorize_user", jsonPayload)
+			g.Assert(status).Equal(http.StatusOK)
 		})
 
 		g.It("Should respond with 400 if malformed JSON", func() {
@@ -37,9 +37,9 @@ func TestUnauthorizeUsersHandler(t *testing.T) {
 			var jsonPayload JSON
 			testJSON := `{"message": "hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/unauthorize_user", t, jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(400)
+			status, _ := PostJSON(a, "/unauthorize_user", jsonPayload)
+			g.Assert(status).Equal(400)
 		})
 
 		g.It("Should respond with 400 if no userId is provided", func() {
@@ -47,9 +47,9 @@ func TestUnauthorizeUsersHandler(t *testing.T) {
 			var jsonPayload JSON
 			testJSON := `{"message": "hello", "rooms": ["room1"]}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/unauthorize_user", t, jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(400)
+			status, _ := PostJSON(a, "/unauthorize_user", jsonPayload)
+			g.Assert(status).Equal(400)
 		})
 
 		g.It("Should respond with 400 if no rooms is provided", func() {
@@ -57,9 +57,9 @@ func TestUnauthorizeUsersHandler(t *testing.T) {
 			var jsonPayload JSON
 			testJSON := `{"userId": "hello", "roo": ["room1"]}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/unauthorize_user", t, jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(400)
+			status, _ := PostJSON(a, "/unauthorize_user", jsonPayload)
+			g.Assert(status).Equal(400)
 		})
 
 	})

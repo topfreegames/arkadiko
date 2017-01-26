@@ -29,10 +29,10 @@ func TestSendMqtt(t *testing.T) {
 			testJSON := `{"message": "hello"}`
 			response := `{"topic": "test", "payload": {"message":"hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/sendmqtt/test", t, jsonPayload)
+			status, body := PostJSON(a, "/sendmqtt/test", jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
-			res.Body().Equal(response)
+			g.Assert(status).Equal(http.StatusOK)
+			g.Assert(body).Equal(response)
 		})
 
 		g.It("Should respond with 200 for a valid message with hierarchical topic", func() {
@@ -42,10 +42,10 @@ func TestSendMqtt(t *testing.T) {
 			response := `{"topic": "test/topic", "payload": {"message":"hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
 			url := "/sendmqtt/test/topic"
-			res := PostJSON(a, url, t, jsonPayload)
+			status, body := PostJSON(a, url, jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(http.StatusOK)
-			res.Body().Equal(response)
+			g.Assert(status).Equal(http.StatusOK)
+			g.Assert(body).Equal(response)
 		})
 
 		g.It("Should respond with 400 if malformed JSON", func() {
@@ -53,9 +53,9 @@ func TestSendMqtt(t *testing.T) {
 			var jsonPayload JSON
 			testJSON := `{"message": "hello"}}`
 			json.Unmarshal([]byte(testJSON), &jsonPayload)
-			res := PostJSON(a, "/sendmqtt/test/topic", t, jsonPayload)
+			status, _ := PostJSON(a, "/sendmqtt/test/topic", jsonPayload)
 
-			g.Assert(res.Raw().StatusCode).Equal(400)
+			g.Assert(status).Equal(400)
 		})
 	})
 }

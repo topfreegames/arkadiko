@@ -65,8 +65,8 @@ func (s *SentryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			tags := map[string]string{
 				"source": "app",
 				"type":   "Internal server error",
-				"url":    c.Request().URI(),
-				"status": fmt.Sprintf("%d", c.Response().Status()),
+				"url":    c.Request().URL.String(),
+				"status": fmt.Sprintf("%d", c.Response().Status),
 			}
 			raven.SetHttpContext(newHTTPFromCtx(c))
 			raven.CaptureError(err, tags)
@@ -82,23 +82,24 @@ func getHTTPParams(ctx echo.Context) (string, map[string]string, string) {
 		qs = string(qsBytes)
 	}
 
-	headers := map[string]string{}
-	for _, headerKey := range ctx.Response().Header().Keys() {
-		headers[string(headerKey)] = string(ctx.Response().Header().Get(headerKey))
-	}
+	//TODO: Fix this
+	//headers := map[string]string{}
+	//for _, headerKey := range ctx.Response().Header(). {
+	//headers[string(headerKey)] = string(ctx.Response().Header().Get(headerKey))
+	//}
 
 	cookies := string(ctx.Response().Header().Get("Cookie"))
-	return qs, headers, cookies
+	return qs, map[string]string{}, cookies
 }
 
 func newHTTPFromCtx(ctx echo.Context) *raven.Http {
 	qs, headers, cookies := getHTTPParams(ctx)
 
 	h := &raven.Http{
-		Method:  string(ctx.Request().Method()),
+		Method:  string(ctx.Request().Method),
 		Cookies: cookies,
 		Query:   qs,
-		URL:     ctx.Request().URI(),
+		URL:     ctx.Request().URL.String(),
 		Headers: headers,
 	}
 	return h
@@ -160,7 +161,7 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		var startTime, endTime time.Time
 
 		path = c.Path()
-		method = c.Request().Method()
+		method = c.Request().Method
 
 		startTime = time.Now()
 
@@ -170,8 +171,8 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		endTime = time.Now()
 		latency = endTime.Sub(startTime)
 
-		status = c.Response().Status()
-		ip = c.Request().RemoteAddress()
+		status = c.Response().Status
+		ip = c.Request().RemoteAddr
 
 		route := c.Path()
 		reqLog := l.With(

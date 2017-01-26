@@ -1,6 +1,5 @@
 package: github.com/topfreegames/arkadiko
 import:
-- package: github.com/gavv/httpexpect
 - package: github.com/rcrowley/go-metrics
 - package: github.com/spf13/cobra
 - package: github.com/spf13/viper
@@ -11,6 +10,7 @@ import:
 - package: github.com/onsi/gomega
 - package: github.com/garyburd/redigo
 - package: github.com/labstack/echo
+  version: v3.0.3
 - package: github.com/newrelic/go-agent
 - package: github.com/getsentry/raven-go
 - package: github.com/satori/go.uuid
