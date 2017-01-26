@@ -9,6 +9,7 @@ GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegame
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
 
 setup:
+	@go get github.com/onsi/ginkgo/ginkgo
 	@go get -u github.com/Masterminds/glide/...
 	@go get -v github.com/spf13/cobra/cobra
 	@glide install
