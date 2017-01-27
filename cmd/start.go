@@ -29,6 +29,16 @@ var startCmd = &cobra.Command{
 	environment variables to override configuration keys.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ll := zap.InfoLevel
+		switch {
+		case Verbose == 0:
+			ll = zap.ErrorLevel
+		case Verbose == 1:
+			ll = zap.WarnLevel
+		case Verbose == 2:
+			ll = zap.InfoLevel
+		case Verbose == 3:
+			ll = zap.DebugLevel
+		}
 		if debug {
 			ll = zap.DebugLevel
 		}
@@ -50,12 +60,19 @@ var startCmd = &cobra.Command{
 		}
 
 		if rpc {
+			logger = zap.New(
+				zap.NewJSONEncoder(),
+				ll,
+			).With(
+				zap.String("source", "rpc"),
+			)
+
 			rpcServer, err := remote.NewServer(
 				rpcHost,
 				rpcPort,
 				ConfigFile,
 				debug,
-				logger.With(zap.String("source", "rpc")),
+				logger,
 			)
 			if err != nil {
 				logger.Fatal("Could not get arkadiko RPC server.", zap.Error(err))

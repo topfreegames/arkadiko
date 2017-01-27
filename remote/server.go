@@ -167,7 +167,9 @@ func (s *Server) configureRPC() error {
 		zap.String("operation", "configureRPC"),
 	)
 
-	s.grpcServer = grpc.NewServer()
+	opts := []grpc.ServerOption{}
+
+	s.grpcServer = grpc.NewServer(opts...)
 	RegisterMQTTServer(s.grpcServer, s)
 	l.Debug("MQTT Server configured properly")
 
@@ -187,7 +189,7 @@ func (s *Server) Start() error {
 		return err
 	}
 
-	log.I(l, "App started.", func(cm log.CM) {
+	log.I(l, "RPC Server started.", func(cm log.CM) {
 		cm.Write(zap.String("host", s.Host), zap.Int("port", s.Port))
 	})
 	s.grpcServer.Serve(lis)
@@ -196,13 +198,21 @@ func (s *Server) Start() error {
 
 //SendMessage to MQTT Server
 func (s *Server) SendMessage(ctx context.Context, message *Message) (*SendMessageResult, error) {
+	l := s.Logger.With(
+		zap.String("source", "rpc"),
+		zap.String("operation", "Start"),
+	)
+
 	var err error
 	if message.Retained {
+		l.Debug("Sending retained message.", zap.String("Topic", message.Topic))
 		err = s.MqttClient.SendRetainedMessage(message.Topic, message.Payload)
 	} else {
+		l.Debug("Sending message.", zap.String("Topic", message.Topic))
 		err = s.MqttClient.SendMessage(message.Topic, message.Payload)
 	}
 	if err != nil {
+		l.Error("Failed to send message to MQTT.", zap.Error(err))
 		return nil, err
 	}
 

@@ -40,7 +40,7 @@ kill-redis:
 	@-redis-cli -p 4444 shutdown
 
 run:
-	@go run main.go start --rpc
+	@go run main.go start --rpc --rpc-port=52345
 
 run-containers:
 	@cd test_containers && docker-compose up -d && cd ..
@@ -104,3 +104,16 @@ cross-exec:
 
 build_proto:
 	@protoc --go_out=plugins=grpc:. ./remote/mqtt.proto
+
+kill-bg:
+	@ps aux | egrep main.+start.+rpc | egrep -v egrep | awk ' { print $$2 } ' | xargs kill -9
+
+run-bg: kill-bg
+	@go run main.go start -v0 --port=52344 --rpc --rpc-port=52345 &
+
+bench: kill-containers run-containers run-bg
+	@sleep 3
+	@${MAKE} bench-run
+
+bench-run:
+	@go test -benchmem -bench . -benchtime 5s ./bench/...

@@ -76,12 +76,16 @@ func GetDefaultTestServer() (*remote.Server, error) {
 }
 
 //GetRPCTestClient returns a connected test client
-func GetRPCTestClient() (remote.MQTTClient, error) {
+func GetRPCTestClient(portOrNil ...int) (remote.MQTTClient, error) {
+	port := 8891
+	if len(portOrNil) == 1 {
+		port = portOrNil[0]
+	}
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
 	}
 
-	conn, err := grpc.Dial("0.0.0.0:8891", opts...)
+	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", port), opts...)
 	if err != nil {
 		return nil, err
 	}

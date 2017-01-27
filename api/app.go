@@ -225,6 +225,9 @@ func (app *App) Start() error {
 		zap.String("operation", "Start"),
 	)
 
+	log.I(l, "App started.", func(cm log.CM) {
+		cm.Write(zap.String("host", app.Host), zap.Int("port", app.Port))
+	})
 	err := app.App.Start(fmt.Sprintf("%s:%d", app.Host, app.Port))
 	if err != nil {
 		log.E(l, "App failed to start.", func(cm log.CM) {
@@ -236,9 +239,5 @@ func (app *App) Start() error {
 		})
 		return err
 	}
-
-	log.I(l, "App started.", func(cm log.CM) {
-		cm.Write(zap.String("host", app.Host), zap.Int("port", app.Port))
-	})
 	return nil
 }
