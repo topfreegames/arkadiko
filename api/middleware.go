@@ -191,6 +191,12 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			reqLog = reqLog.With(zap.Duration("mqttLatency", mqttLatency))
 		}
 
+		requestorInterface := c.Get("requestor")
+		if requestorInterface != nil {
+			requestor := requestorInterface.(string)
+			reqLog = reqLog.With(zap.String("requestor", requestor))
+		}
+
 		//request failed
 		if status > 399 && status < 500 {
 			log.W(reqLog, "Request failed.")
