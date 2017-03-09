@@ -197,6 +197,12 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			reqLog = reqLog.With(zap.String("requestor", requestor))
 		}
 
+		retainedInterface := c.Get("retained")
+		if retainedInterface != nil {
+			retained := retainedInterface.(bool)
+			reqLog = reqLog.With(zap.Bool("retained", retained))
+		}
+
 		//request failed
 		if status > 399 && status < 500 {
 			log.W(reqLog, "Request failed.")

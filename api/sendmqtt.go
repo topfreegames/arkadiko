@@ -84,6 +84,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		log.D(lg, "sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
 		c.Set("requestor", source)
+		c.Set("retained", retained)
 
 		if err != nil {
 			return FailWith(400, err.Error(), c)
