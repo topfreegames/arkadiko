@@ -81,8 +81,9 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		mqttLatency = afterMqttTime.Sub(beforeMqttTime)
 		lg = lg.With(zap.Int64("mqttLatency", mqttLatency.Nanoseconds()))
-		log.I(lg, "sent mqtt message")
+		log.D(lg, "sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
+		c.Set("requestor", source)
 
 		if err != nil {
 			return FailWith(400, err.Error(), c)
