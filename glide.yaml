@@ -15,3 +15,5 @@ import:
 - package: github.com/satori/go.uuid
 - package: google.golang.org/grpc
   version: ^1.0.5
+- package: github.com/valyala/fasthttp
+  version: ^20160617.0.0

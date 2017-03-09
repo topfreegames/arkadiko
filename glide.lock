@@ -1,5 +1,5 @@
-hash: be988597c0d3f954b2e097ae0a5a8308200b05532a324312a52e2f3462c1c1cb
-updated: 2017-01-26T17:14:49.726642479-02:00
+hash: b0ba5d03b375b474bcbb6af8e824d0a0de6342a17d03bfd3776b1fd489390ee4
+updated: 2017-03-09T11:54:44.532177492-03:00
 imports:
 - name: github.com/certifi/gocertifi
   version: a61bf5eafa3aee233ec8043e9da052447e5463dd
@@ -35,6 +35,16 @@ imports:
   - json/token
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/klauspost/compress
+  version: 14c9a76e3c95e47f8ccce949bba2c1101a8b85e6
+  subpackages:
+  - flate
+  - gzip
+  - zlib
+- name: github.com/klauspost/cpuid
+  version: 09cded8978dc9e80714c4d85b0322337b0a1e5e0
+- name: github.com/klauspost/crc32
+  version: cb6bfca970f6908083f26f39a79009d608efd5cd
 - name: github.com/kr/fs
   version: 2788f0dbd16903de03cb8186e5c7d97b69ad387b
 - name: github.com/labstack/echo
@@ -127,6 +137,10 @@ imports:
   version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 - name: github.com/uber-go/zap
   version: f2929c57adb5be8fb03cad9a6912c509a5cb60af
+- name: github.com/valyala/fasthttp
+  version: d42167fd04f636e20b005e9934159e95454233c7
+  subpackages:
+  - fasthttputil
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: golang.org/x/crypto

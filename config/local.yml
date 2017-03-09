@@ -9,7 +9,7 @@ mqttserver:
   insecure_tls: true
 redis:
   host: localhost
-  port: 6379
+  port: 4444
   password: ""
   maxPoolSize: 20
 newrelic:
