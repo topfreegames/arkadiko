@@ -11,8 +11,8 @@ import (
 	"sync"
 
 	"github.com/garyburd/redigo/redis"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/uber-go/zap"
 )
 
 var once sync.Once
@@ -20,12 +20,12 @@ var client *RedisClient
 
 // RedisClient struct
 type RedisClient struct {
-	Logger zap.Logger
+	Logger *log.Entry
 	Pool   *redis.Pool
 }
 
 // GetRedisClient get a redisclient
-func GetRedisClient(redisHost string, redisPort int, redisPass string, l zap.Logger) *RedisClient {
+func GetRedisClient(redisHost string, redisPort int, redisPass string, l *log.Entry) *RedisClient {
 	once.Do(func() {
 		client = &RedisClient{
 			Logger: l,
@@ -36,10 +36,11 @@ func GetRedisClient(redisHost string, redisPort int, redisPass string, l zap.Log
 				c, err := redis.Dial("tcp", fmt.Sprintf("%s:%d", viper.GetString("redis.host"),
 					viper.GetInt("redis.port")), redis.DialPassword(viper.GetString("redis.password")))
 				if err != nil {
-					client.Logger.Error(err.Error())
+					client.Logger.WithError(err).Error()
 				}
 				return c, err
 			}
+
 			c, err := redis.Dial("tcp", redisAddress)
 			if err != nil {
 				if err != nil {

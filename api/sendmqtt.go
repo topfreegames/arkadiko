@@ -15,16 +15,15 @@ import (
 	"time"
 
 	"github.com/labstack/echo"
-	"github.com/topfreegames/arkadiko/log"
-	"github.com/uber-go/zap"
+	log "github.com/sirupsen/logrus"
 )
 
 // SendMqttHandler is the handler responsible for sending messages to mqtt
 func SendMqttHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		lg := app.Logger.With(
-			zap.String("handler", "SendMqttHandler"),
-		)
+		lg := app.Logger.WithFields(log.Fields{
+			"handler": "SendMqttHandler",
+		})
 
 		retainedValue := c.QueryParam("retained")
 		retained := true
@@ -33,7 +32,6 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 
 		source := c.QueryParam("source")
-		lg = lg.With(zap.String("sender", source))
 
 		body := c.Request().Body
 		b, err := ioutil.ReadAll(body)
@@ -62,7 +60,6 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
-		lg = lg.With(zap.String("topic", topic), zap.String("payload", string(b)))
 		workingString := fmt.Sprintf(`{"topic": "%s", "retained": %t, "payload": %v}`, topic, retained, string(b))
 
 		var mqttLatency time.Duration
@@ -80,8 +77,8 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		})
 
 		mqttLatency = afterMqttTime.Sub(beforeMqttTime)
-		lg = lg.With(zap.Int64("mqttLatency", mqttLatency.Nanoseconds()))
-		log.D(lg, "sent mqtt message")
+		lg = lg.WithField("mqttLatency", mqttLatency.Nanoseconds())
+		lg.Debug("sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
 		c.Set("requestor", source)
 		c.Set("retained", retained)

@@ -10,17 +10,14 @@ import (
 	"github.com/garyburd/redigo/redis"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/topfreegames/arkadiko/redisclient"
-	"github.com/uber-go/zap"
 )
 
 var _ = Describe("Redis Client", func() {
-	logger := zap.New(
-		zap.NewJSONEncoder(),
-		zap.FatalLevel,
-	).With(
-		zap.String("source", "app"),
-	)
+	l, _ := test.NewNullLogger()
+	logger := l.WithFields(log.Fields{})
 
 	Describe("Specs", func() {
 		Describe("Redis Client", func() {

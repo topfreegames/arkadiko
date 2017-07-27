@@ -8,10 +8,12 @@
 package cmd
 
 import (
+	"os"
+
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/topfreegames/arkadiko/api"
 	"github.com/topfreegames/arkadiko/remote"
-	"github.com/uber-go/zap"
 )
 
 var host string
@@ -28,26 +30,26 @@ var startCmd = &cobra.Command{
 	Long: `Starts arkadiko server with the specified arguments. You can use
 	environment variables to override configuration keys.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ll := zap.InfoLevel
+		ll := log.InfoLevel
 		switch {
 		case Verbose == 0:
-			ll = zap.ErrorLevel
+			ll = log.ErrorLevel
 		case Verbose == 1:
-			ll = zap.WarnLevel
+			ll = log.WarnLevel
 		case Verbose == 2:
-			ll = zap.InfoLevel
+			ll = log.InfoLevel
 		case Verbose == 3:
-			ll = zap.DebugLevel
+			ll = log.DebugLevel
 		}
 		if debug {
-			ll = zap.DebugLevel
+			ll = log.DebugLevel
 		}
-		logger := zap.New(
-			zap.NewJSONEncoder(),
-			ll,
-		).With(
-			zap.String("source", "app"),
-		)
+		log.SetFormatter(&log.JSONFormatter{})
+		log.SetLevel(ll)
+		log.SetOutput(os.Stdout)
+
+		logger := log.WithField("source", "app")
+		logger.Debug("starting")
 		app, err := api.GetApp(
 			host,
 			port,
@@ -56,17 +58,10 @@ var startCmd = &cobra.Command{
 			logger,
 		)
 		if err != nil {
-			logger.Fatal("Could not get arkadiko application.", zap.Error(err))
+			logger.WithError(err).Fatal("Could not get arkadiko application.")
 		}
-
+		logger = log.WithField("source", "rpc")
 		if rpc {
-			logger = zap.New(
-				zap.NewJSONEncoder(),
-				ll,
-			).With(
-				zap.String("source", "rpc"),
-			)
-
 			rpcServer, err := remote.NewServer(
 				rpcHost,
 				rpcPort,
@@ -75,20 +70,20 @@ var startCmd = &cobra.Command{
 				logger,
 			)
 			if err != nil {
-				logger.Fatal("Could not get arkadiko RPC server.", zap.Error(err))
+				logger.WithError(err).Fatal("Could not get arkadiko RPC server.")
 			}
 
 			go func(rpcs *remote.Server) {
 				err := rpcs.Start()
 				if err != nil {
-					logger.Fatal("Could not start arkadiko RPC server.", zap.Error(err))
+					logger.WithError(err).Fatal("Could not start arkadiko RPC server.")
 				}
 			}(rpcServer)
 		}
 
 		err = app.Start()
 		if err != nil {
-			logger.Fatal("Could not start arkadiko application.", zap.Error(err))
+			logger.WithError(err).Fatal("Could not start arkadiko application.")
 		}
 	},
 }

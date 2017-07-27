@@ -16,11 +16,10 @@ import (
 
 	raven "github.com/getsentry/raven-go"
 	newrelic "github.com/newrelic/go-agent"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/topfreegames/arkadiko/log"
 	"github.com/topfreegames/arkadiko/mqttclient"
 	"github.com/topfreegames/arkadiko/redisclient"
-	"github.com/uber-go/zap"
 	context "golang.org/x/net/context"
 )
 
@@ -31,7 +30,7 @@ type Server struct {
 	Host        string
 	ConfigPath  string
 	Config      *viper.Viper
-	Logger      zap.Logger
+	Logger      *log.Entry
 	MqttClient  *mqttclient.MqttClient
 	RedisClient *redisclient.RedisClient
 	NewRelic    newrelic.Application
@@ -39,7 +38,7 @@ type Server struct {
 }
 
 //NewServer returns a new RPC Server
-func NewServer(host string, port int, configPath string, debug bool, logger zap.Logger) (*Server, error) {
+func NewServer(host string, port int, configPath string, debug bool, logger *log.Entry) (*Server, error) {
 	server := &Server{
 		Host:       host,
 		Port:       port,
@@ -76,27 +75,28 @@ func (s *Server) configure() error {
 	redisHost := s.Config.GetString("redis.host")
 	redisPort := s.Config.GetInt("redis.port")
 	redisPass := s.Config.GetString("redis.password")
-	rl := s.Logger.With(
-		zap.String("host", redisHost),
-		zap.Int("port", redisPort),
-	)
+	defaultLogger := s.Logger.WithFields(log.Fields{})
+	rl := s.Logger.WithFields(log.Fields{
+		"host": redisHost,
+		"port": redisPort,
+	})
 
-	log.D(rl, "Connecting to redis...")
-	s.RedisClient = redisclient.GetRedisClient(redisHost, redisPort, redisPass, s.Logger)
-	log.I(rl, "Connected to redis successfully.")
+	rl.Debug("Connecting to redis...")
+	s.RedisClient = redisclient.GetRedisClient(redisHost, redisPort, redisPass, defaultLogger)
+	rl.Info("Connected to redis successfully.")
 
-	log.D(s.Logger, "Connecting to mqtt...")
-	s.MqttClient = mqttclient.GetMqttClient(s.ConfigPath, nil, s.Logger)
-	log.I(s.Logger, "Connected to mqtt successfully.")
+	rl.Debug("Connecting to mqtt...")
+	s.MqttClient = mqttclient.GetMqttClient(s.ConfigPath, nil, defaultLogger)
+	defaultLogger.Info("Connected to mqtt successfully.")
 
 	return nil
 }
 
 func (s *Server) configureSentry() {
-	l := s.Logger.With(
-		zap.String("source", "rpc"),
-		zap.String("operation", "configureSentry"),
-	)
+	l := s.Logger.WithFields(log.Fields{
+		"source":    "rpc",
+		"operation": "configureSentry",
+	})
 	sentryURL := s.Config.GetString("sentry.url")
 	raven.SetDSN(sentryURL)
 	l.Info("Configured sentry successfully.")
@@ -105,10 +105,10 @@ func (s *Server) configureSentry() {
 func (s *Server) configureNewRelic() error {
 	newRelicKey := s.Config.GetString("newrelic.key")
 
-	l := s.Logger.With(
-		zap.String("source", "rpc"),
-		zap.String("operation", "configureNewRelic"),
-	)
+	l := s.Logger.WithFields(log.Fields{
+		"source":    "rpc",
+		"operation": "configureNewRelic",
+	})
 
 	config := newrelic.NewConfig("arkadiko", newRelicKey)
 	if newRelicKey == "" {
@@ -117,7 +117,7 @@ func (s *Server) configureNewRelic() error {
 	}
 	nr, err := newrelic.NewApplication(config)
 	if err != nil {
-		l.Error("Failed to initialize New Relic.", zap.Error(err))
+		l.WithError(err).Error("Failed to initialize New Relic.")
 		return err
 	}
 
@@ -139,7 +139,9 @@ func (s *Server) loadConfiguration() error {
 	s.Config.AutomaticEnv()
 
 	if err := s.Config.ReadInConfig(); err == nil {
-		s.Logger.Info("Loaded config file.", zap.String("configFile", s.Config.ConfigFileUsed()))
+		s.Logger.WithField(
+			"configFile", s.Config.ConfigFileUsed(),
+		).Info("Loaded config file.")
 	} else {
 		return fmt.Errorf("Could not load configuration file from: %s", s.ConfigPath)
 	}
@@ -149,11 +151,7 @@ func (s *Server) loadConfiguration() error {
 
 //OnErrorHandler handles panics
 func (s *Server) OnErrorHandler(err error, stack []byte) {
-	s.Logger.Error(
-		"Panic occurred.",
-		zap.Object("panicText", err),
-		zap.String("stack", string(stack)),
-	)
+	s.Logger.WithError(err).Error("Panic occurred.")
 
 	tags := map[string]string{
 		"source": "s",
@@ -163,9 +161,7 @@ func (s *Server) OnErrorHandler(err error, stack []byte) {
 }
 
 func (s *Server) configureRPC() error {
-	l := s.Logger.With(
-		zap.String("operation", "configureRPC"),
-	)
+	l := s.Logger.WithField("operation", "configureRPC")
 
 	opts := []grpc.ServerOption{}
 
@@ -178,41 +174,43 @@ func (s *Server) configureRPC() error {
 
 // Start starts listening for web requests at specified host and port
 func (s *Server) Start() error {
-	l := s.Logger.With(
-		zap.String("source", "rpc"),
-		zap.String("operation", "Start"),
-	)
+	l := s.Logger.WithFields(log.Fields{
+		"source":    "rpc",
+		"operation": "Start",
+	})
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port))
 	if err != nil {
-		l.Error("Failed to start RPC Server", zap.Error(err))
+		l.WithError(err).Error("Failed to start RPC Server")
 		return err
 	}
 
-	log.I(l, "RPC Server started.", func(cm log.CM) {
-		cm.Write(zap.String("host", s.Host), zap.Int("port", s.Port))
-	})
+	l.WithFields(log.Fields{
+		"host": s.Host,
+		"port": s.Port,
+	}).Info("RPC Server started.")
+
 	s.grpcServer.Serve(lis)
 	return nil
 }
 
 //SendMessage to MQTT Server
 func (s *Server) SendMessage(ctx context.Context, message *Message) (*SendMessageResult, error) {
-	l := s.Logger.With(
-		zap.String("source", "rpc"),
-		zap.String("operation", "Start"),
-	)
-
+	l := s.Logger.WithFields(log.Fields{
+		"source":    "rpc",
+		"operation": "Start",
+		"Topic":     message.Topic,
+	})
 	var err error
 	if message.Retained {
-		l.Debug("Sending retained message.", zap.String("Topic", message.Topic))
+		l.Debug("Sending retained message.")
 		err = s.MqttClient.SendRetainedMessage(message.Topic, message.Payload)
 	} else {
-		l.Debug("Sending message.", zap.String("Topic", message.Topic))
+		l.Debug("Sending message.")
 		err = s.MqttClient.SendMessage(message.Topic, message.Payload)
 	}
 	if err != nil {
-		l.Error("Failed to send message to MQTT.", zap.Error(err))
+		l.WithError(err).Error("Failed to send message to MQTT.")
 		return nil, err
 	}
 

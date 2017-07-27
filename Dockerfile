@@ -4,7 +4,7 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-FROM golang:1.6.2-alpine
+FROM golang:1.8-alpine3.6
 
 MAINTAINER TFG Co <backend@tfgco.com>
 

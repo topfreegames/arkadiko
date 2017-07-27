@@ -18,10 +18,9 @@ import (
 	"github.com/labstack/echo/middleware"
 	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/uber-go/zap"
 
-	"github.com/topfreegames/arkadiko/log"
 	"github.com/topfreegames/arkadiko/mqttclient"
 	"github.com/topfreegames/arkadiko/redisclient"
 )
@@ -38,14 +37,14 @@ type App struct {
 	Errors      metrics.EWMA
 	App         *echo.Echo
 	Config      *viper.Viper
-	Logger      zap.Logger
+	Logger      *log.Entry
 	MqttClient  *mqttclient.MqttClient
 	RedisClient *redisclient.RedisClient
 	NewRelic    newrelic.Application
 }
 
 // GetApp returns a new arkadiko API Application
-func GetApp(host string, port int, configPath string, debug bool, logger zap.Logger) (*App, error) {
+func GetApp(host string, port int, configPath string, debug bool, logger *log.Entry) (*App, error) {
 	app := &App{
 		Host:       host,
 		Port:       port,
@@ -84,10 +83,10 @@ func (app *App) Configure() error {
 }
 
 func (app *App) configureSentry() {
-	l := app.Logger.With(
-		zap.String("source", "app"),
-		zap.String("operation", "configureSentry"),
-	)
+	l := app.Logger.WithFields(log.Fields{
+		"source":    "app",
+		"operation": "configureSentry",
+	})
 	sentryURL := app.Config.GetString("sentry.url")
 	raven.SetDSN(sentryURL)
 	l.Info("Configured sentry successfully.")
@@ -96,10 +95,10 @@ func (app *App) configureSentry() {
 func (app *App) configureNewRelic() error {
 	newRelicKey := app.Config.GetString("newrelic.key")
 
-	l := app.Logger.With(
-		zap.String("source", "app"),
-		zap.String("operation", "configureNewRelic"),
-	)
+	l := app.Logger.WithFields(log.Fields{
+		"source":    "app",
+		"operation": "configureNewRelic",
+	})
 
 	config := newrelic.NewConfig("arkadiko", newRelicKey)
 	if newRelicKey == "" {
@@ -108,7 +107,7 @@ func (app *App) configureNewRelic() error {
 	}
 	nr, err := newrelic.NewApplication(config)
 	if err != nil {
-		l.Error("Failed to initialize New Relic.", zap.Error(err))
+		l.WithError(err).Error("Failed to initialize New Relic.")
 		return err
 	}
 
@@ -130,7 +129,9 @@ func (app *App) loadConfiguration() error {
 	app.Config.AutomaticEnv()
 
 	if err := app.Config.ReadInConfig(); err == nil {
-		app.Logger.Info("Loaded config file.", zap.String("configFile", app.Config.ConfigFileUsed()))
+		app.Logger.WithFields(log.Fields{
+			"configFile": app.Config.ConfigFileUsed(),
+		}).Info("Loaded config file.")
 	} else {
 		return fmt.Errorf("Could not load configuration file from: %s", app.ConfigPath)
 	}
@@ -140,11 +141,7 @@ func (app *App) loadConfiguration() error {
 
 //OnErrorHandler handles panics
 func (app *App) OnErrorHandler(err error, stack []byte) {
-	app.Logger.Error(
-		"Panic occurred.",
-		zap.Object("panicText", err),
-		zap.String("stack", string(stack)),
-	)
+	app.Logger.WithError(err).Error("Panic occurred.")
 
 	tags := map[string]string{
 		"source": "app",
@@ -154,9 +151,9 @@ func (app *App) OnErrorHandler(err error, stack []byte) {
 }
 
 func (app *App) configureApplication() error {
-	l := app.Logger.With(
-		zap.String("operation", "configureApplication"),
-	)
+	l := app.Logger.WithFields(log.Fields{
+		"operation": "configureApplication",
+	})
 
 	app.App = echo.New()
 	a := app.App
@@ -167,10 +164,13 @@ func (app *App) configureApplication() error {
 	basicAuthUser := app.Config.GetString("basicauth.username")
 	if basicAuthUser != "" {
 		basicAuthPass := app.Config.GetString("basicauth.password")
-
-		a.Use(middleware.BasicAuth(func(username, password string) bool {
-			return username == basicAuthUser && password == basicAuthPass
+		a.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+			if username == basicAuthUser && password == basicAuthPass {
+				return true, nil
+			}
+			return false, nil
 		}))
+
 	}
 
 	a.Pre(middleware.RemoveTrailingSlash())
@@ -194,18 +194,18 @@ func (app *App) configureApplication() error {
 	redisHost := app.Config.GetString("redis.host")
 	redisPort := app.Config.GetInt("redis.port")
 	redisPass := app.Config.GetString("redis.password")
-	rl := l.With(
-		zap.String("host", redisHost),
-		zap.Int("port", redisPort),
-	)
+	rl := l.WithFields(log.Fields{
+		"host": redisHost,
+		"port": redisPort,
+	})
 
-	log.D(rl, "Connecting to redis...")
+	rl.Debug("Connecting to redis...")
 	app.RedisClient = redisclient.GetRedisClient(redisHost, redisPort, redisPass, l)
-	log.I(rl, "Connected to redis successfully.")
+	rl.Info("Connected to redis successfully.")
 
-	log.D(l, "Connecting to mqtt...")
+	l.Debug("Connecting to mqtt...")
 	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil, l)
-	log.I(l, "Connected to mqtt successfully.")
+	l.Info("Connected to mqtt successfully.")
 
 	go func() {
 		app.Errors.Tick()
@@ -220,23 +220,19 @@ func (app *App) addError() {
 
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() error {
-	l := app.Logger.With(
-		zap.String("source", "app"),
-		zap.String("operation", "Start"),
-	)
-
-	log.I(l, "App started.", func(cm log.CM) {
-		cm.Write(zap.String("host", app.Host), zap.Int("port", app.Port))
+	l := app.Logger.WithFields(log.Fields{
+		"source":    "app",
+		"operation": "Start",
 	})
+
+	l.WithFields(log.Fields{
+		"host": app.Host,
+		"port": app.Port,
+	}).Info("App started.")
+
 	err := app.App.Start(fmt.Sprintf("%s:%d", app.Host, app.Port))
 	if err != nil {
-		log.E(l, "App failed to start.", func(cm log.CM) {
-			cm.Write(
-				zap.String("host", app.Host),
-				zap.Int("port", app.Port),
-				zap.Error(err),
-			)
-		})
+		l.WithError(err).Error("App failed to start.")
 		return err
 	}
 	return nil
