@@ -30,7 +30,7 @@ type Server struct {
 	Host        string
 	ConfigPath  string
 	Config      *viper.Viper
-	Logger      *log.Entry
+	Logger      log.FieldLogger
 	MqttClient  *mqttclient.MqttClient
 	RedisClient *redisclient.RedisClient
 	NewRelic    newrelic.Application
@@ -38,7 +38,7 @@ type Server struct {
 }
 
 //NewServer returns a new RPC Server
-func NewServer(host string, port int, configPath string, debug bool, logger *log.Entry) (*Server, error) {
+func NewServer(host string, port int, configPath string, debug bool, logger log.FieldLogger) (*Server, error) {
 	server := &Server{
 		Host:       host,
 		Port:       port,

@@ -29,7 +29,7 @@ type MqttClient struct {
 	MqttServerPort int
 	ConfigPath     string
 	Config         *viper.Viper
-	Logger         *log.Entry
+	Logger         log.FieldLogger
 	MqttClient     mqtt.Client
 }
 
@@ -37,7 +37,7 @@ var client *MqttClient
 var once sync.Once
 
 // GetMqttClient creates the mqttclient and returns it
-func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l *log.Entry) *MqttClient {
+func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l log.FieldLogger) *MqttClient {
 	defaultOnConnectHandler := func(client mqtt.Client) {
 		l.Info("Connected to MQTT server")
 	}
@@ -98,7 +98,7 @@ func (mc *MqttClient) WaitForConnection(timeout int) error {
 	return nil
 }
 
-func (mc *MqttClient) configure(l *log.Entry) {
+func (mc *MqttClient) configure(l log.FieldLogger) {
 	mc.Logger = l
 
 	mc.setConfigurationDefaults()

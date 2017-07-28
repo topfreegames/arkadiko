@@ -136,14 +136,14 @@ func (r *RecoveryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 // NewLoggerMiddleware returns the logger middleware
-func NewLoggerMiddleware(theLogger *log.Entry) *LoggerMiddleware {
+func NewLoggerMiddleware(theLogger log.FieldLogger) *LoggerMiddleware {
 	l := &LoggerMiddleware{Logger: theLogger}
 	return l
 }
 
 //LoggerMiddleware is responsible for logging to Zap all requests
 type LoggerMiddleware struct {
-	Logger *log.Entry
+	Logger log.FieldLogger
 }
 
 // Serve serves the middleware
@@ -221,7 +221,7 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 //NewNewRelicMiddleware returns the logger middleware
-func NewNewRelicMiddleware(app *App, theLogger *log.Entry) *NewRelicMiddleware {
+func NewNewRelicMiddleware(app *App, theLogger log.FieldLogger) *NewRelicMiddleware {
 	l := &NewRelicMiddleware{App: app, Logger: theLogger}
 	return l
 }
@@ -229,7 +229,7 @@ func NewNewRelicMiddleware(app *App, theLogger *log.Entry) *NewRelicMiddleware {
 //NewRelicMiddleware is responsible for logging to Zap all requests
 type NewRelicMiddleware struct {
 	App    *App
-	Logger *log.Entry
+	Logger log.FieldLogger
 }
 
 // Serve serves the middleware

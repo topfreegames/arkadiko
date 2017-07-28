@@ -20,12 +20,12 @@ var client *RedisClient
 
 // RedisClient struct
 type RedisClient struct {
-	Logger *log.Entry
+	Logger log.FieldLogger
 	Pool   *redis.Pool
 }
 
 // GetRedisClient get a redisclient
-func GetRedisClient(redisHost string, redisPort int, redisPass string, l *log.Entry) *RedisClient {
+func GetRedisClient(redisHost string, redisPort int, redisPass string, l log.FieldLogger) *RedisClient {
 	once.Do(func() {
 		client = &RedisClient{
 			Logger: l,

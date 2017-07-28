@@ -37,14 +37,14 @@ type App struct {
 	Errors      metrics.EWMA
 	App         *echo.Echo
 	Config      *viper.Viper
-	Logger      *log.Entry
+	Logger      log.FieldLogger
 	MqttClient  *mqttclient.MqttClient
 	RedisClient *redisclient.RedisClient
 	NewRelic    newrelic.Application
 }
 
 // GetApp returns a new arkadiko API Application
-func GetApp(host string, port int, configPath string, debug bool, logger *log.Entry) (*App, error) {
+func GetApp(host string, port int, configPath string, debug bool, logger log.FieldLogger) (*App, error) {
 	app := &App{
 		Host:       host,
 		Port:       port,
