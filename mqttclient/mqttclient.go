@@ -9,16 +9,18 @@ package mqttclient
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"
-	"github.com/uber-go/zap"
 )
 
 // MqttClient contains the data needed to connect the client
@@ -27,7 +29,7 @@ type MqttClient struct {
 	MqttServerPort int
 	ConfigPath     string
 	Config         *viper.Viper
-	Logger         zap.Logger
+	Logger         log.FieldLogger
 	MqttClient     mqtt.Client
 }
 
@@ -35,7 +37,15 @@ var client *MqttClient
 var once sync.Once
 
 // GetMqttClient creates the mqttclient and returns it
-func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l zap.Logger) *MqttClient {
+func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l log.FieldLogger) *MqttClient {
+	defaultOnConnectHandler := func(client mqtt.Client) {
+		l.Info("Connected to MQTT server")
+	}
+
+	if onConnectHandler == nil {
+		onConnectHandler = defaultOnConnectHandler
+	}
+
 	once.Do(func() {
 		client = &MqttClient{
 			ConfigPath: configPath,
@@ -58,9 +68,16 @@ func (mc *MqttClient) SendRetainedMessage(topic string, message string) error {
 }
 
 func (mc *MqttClient) publishMessage(topic string, message string, retained bool) error {
-	if token := mc.MqttClient.Publish(topic, 2, retained, message); token.Wait() && token.Error() != nil {
-		mc.Logger.Error(fmt.Sprintf("%v", token.Error()))
-		return token.Error()
+	token := mc.MqttClient.Publish(topic, 2, retained, message)
+	result := token.WaitTimeout(time.Second * 5)
+
+	if result == false || token.Error() != nil {
+		err := token.Error()
+		if err == nil {
+			err = errors.New("timeoutError")
+		}
+		mc.Logger.WithError(err).Error()
+		return err
 	}
 	return nil
 }
@@ -76,12 +93,12 @@ func (mc *MqttClient) WaitForConnection(timeout int) error {
 	}
 
 	if timedOut() {
-		return fmt.Errorf("Connection to MQTT timed out.")
+		return fmt.Errorf("Connection to MQTT timed out")
 	}
 	return nil
 }
 
-func (mc *MqttClient) configure(l zap.Logger) {
+func (mc *MqttClient) configure(l log.FieldLogger) {
 	mc.Logger = l
 
 	mc.setConfigurationDefaults()
@@ -104,7 +121,9 @@ func (mc *MqttClient) loadConfiguration() {
 	mc.Config.AutomaticEnv()
 
 	if err := mc.Config.ReadInConfig(); err == nil {
-		mc.Logger.Info("Loaded config file.", zap.String("configFile", mc.Config.ConfigFileUsed()))
+		mc.Logger.WithFields(log.Fields{
+			"configFile": mc.Config.ConfigFileUsed(),
+		}).Info("Loaded config file.")
 	} else {
 		panic(fmt.Sprintf("Could not load configuration file from: %s", mc.ConfigPath))
 	}
@@ -116,8 +135,11 @@ func (mc *MqttClient) configureClient() {
 }
 
 func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
-	mc.Logger.Info("Initializing mqtt client", zap.String("host", mc.MqttServerHost),
-		zap.Int("port", mc.MqttServerPort), zap.String("ca_cert_file", mc.Config.GetString("mqttserver.ca_cert_file")))
+	mc.Logger.WithFields(log.Fields{
+		"host":         mc.MqttServerHost,
+		"port":         mc.MqttServerPort,
+		"ca_cert_file": mc.Config.GetString("mqttserver.ca_cert_file"),
+	}).Info("Initializing mqtt client")
 
 	useTLS := mc.Config.GetBool("mqttserver.usetls")
 
@@ -130,14 +152,16 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("%s://%s:%d", protocol, mc.MqttServerHost, mc.MqttServerPort)).SetClientID(clientID)
 
 	if useTLS {
-		mc.Logger.Info("using tls", zap.Bool("insecure_skip_verify", mc.Config.GetBool("mqttserver.insecure_tls")))
+		mc.Logger.WithFields(log.Fields{
+			"insecure_skip_verify": mc.Config.GetBool("mqttserver.insecure_tls"),
+		}).Info("using tls")
 		certpool := x509.NewCertPool()
 		if mc.Config.GetString("mqttserver.ca_cert_file") != "" {
 			pemCerts, err := ioutil.ReadFile(mc.Config.GetString("mqttserver.ca_cert_file"))
 			if err == nil {
 				certpool.AppendCertsFromPEM(pemCerts)
 			} else {
-				mc.Logger.Error(err.Error())
+				mc.Logger.WithError(err).Error()
 			}
 		}
 		tlsConfig := &tls.Config{InsecureSkipVerify: mc.Config.GetBool("mqttserver.insecure_tls"), ClientAuth: tls.NoClientCert, RootCAs: certpool}
@@ -149,12 +173,13 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	opts.SetPingTimeout(5 * time.Second)
 	opts.SetMaxReconnectInterval(30 * time.Second)
 	opts.SetOnConnectHandler(onConnectHandler)
+	opts.SetAutoReconnect(true)
 	mc.MqttClient = mqtt.NewClient(opts)
 
 	c := mc.MqttClient
 
 	if token := c.Connect(); token.Wait() && token.Error() != nil {
-		mc.Logger.Fatal("Error connecting to mqttserver", zap.Error(token.Error()))
+		mc.Logger.WithError(token.Error()).Info("Error connecting to mqttserver")
 	}
 
 	mc.Logger.Info(fmt.Sprintf("Successfully connected to mqtt server at %s:%d!",

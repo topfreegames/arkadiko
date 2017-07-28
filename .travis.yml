@@ -1,25 +1,13 @@
 language: go
 
-env:
-  global:
-    - DOCKER_COMPOSE_VERSION=1.7.1
-
 go:
-  - 1.7.3
+  - 1.8
 
 sudo: required
 
 services:
   - docker
   - redis-server
-
-before_install:
-  - apt-cache madison docker-engine
-    # upgrade docker-engine to specific version
-  - sudo rm /usr/local/bin/docker-compose
-  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-  - chmod +x docker-compose
-  - sudo mv docker-compose /usr/local/bin
 
 install:
   - make setup-ci
@@ -35,4 +23,3 @@ after_success:
   - $HOME/gopath/bin/goveralls -coverprofile coverage-all.out -service=travis-ci
   - make cross-linux
   - ./push_to_docker.sh
-  #- curl -H POST $TEST_FARM_URL

@@ -40,7 +40,7 @@ kill-redis:
 	@-redis-cli -p 4444 shutdown
 
 run:
-	@go run main.go start --rpc --rpc-port=52345
+	@go run main.go start --rpc --rpc-port=52345 -d
 
 run-containers:
 	@cd test_containers && docker-compose up -d && cd ..

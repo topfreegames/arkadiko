@@ -15,8 +15,7 @@ import (
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/labstack/echo"
-	"github.com/topfreegames/arkadiko/log"
-	"github.com/uber-go/zap"
+	log "github.com/sirupsen/logrus"
 )
 
 //NewVersionMiddleware with API version
@@ -137,22 +136,22 @@ func (r *RecoveryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 // NewLoggerMiddleware returns the logger middleware
-func NewLoggerMiddleware(theLogger zap.Logger) *LoggerMiddleware {
+func NewLoggerMiddleware(theLogger log.FieldLogger) *LoggerMiddleware {
 	l := &LoggerMiddleware{Logger: theLogger}
 	return l
 }
 
 //LoggerMiddleware is responsible for logging to Zap all requests
 type LoggerMiddleware struct {
-	Logger zap.Logger
+	Logger log.FieldLogger
 }
 
 // Serve serves the middleware
 func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		l := l.Logger.With(
-			zap.String("source", "request"),
-		)
+		l := l.Logger.WithFields(log.Fields{
+			"source": "request",
+		})
 
 		//all except latency to string
 		var ip, method, path string
@@ -175,56 +174,54 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		ip = c.Request().RemoteAddr
 
 		route := c.Path()
-		reqLog := l.With(
-			zap.String("route", route),
-			zap.Time("endTime", endTime),
-			zap.Int("statusCode", status),
-			zap.Duration("latency", latency),
-			zap.String("ip", ip),
-			zap.String("method", method),
-			zap.String("path", path),
-		)
+		reqLog := l.WithFields(log.Fields{
+			"route":      route,
+			"endTime":    endTime,
+			"statusCode": status,
+			"latency":    latency,
+			"ip":         ip,
+			"method":     method,
+			"path":       path,
+		})
 
 		mqttLatencyInterface := c.Get("mqttLatency")
 		if mqttLatencyInterface != nil {
 			mqttLatency := mqttLatencyInterface.(time.Duration)
-			reqLog = reqLog.With(zap.Duration("mqttLatency", mqttLatency))
+			reqLog = reqLog.WithField("mqttLatency", mqttLatency)
 		}
 
 		requestorInterface := c.Get("requestor")
 		if requestorInterface != nil {
 			requestor := requestorInterface.(string)
-			reqLog = reqLog.With(zap.String("requestor", requestor))
+			reqLog = reqLog.WithField("requestor", requestor)
 		}
 
 		retainedInterface := c.Get("retained")
 		if retainedInterface != nil {
 			retained := retainedInterface.(bool)
-			reqLog = reqLog.With(zap.Bool("retained", retained))
+			reqLog = reqLog.WithField("retained", retained)
 		}
 
 		//request failed
 		if status > 399 && status < 500 {
-			log.W(reqLog, "Request failed.")
+			reqLog.WithError(err).Warn("Request failed.")
 			return err
 		}
 
 		//request is ok, but server failed
 		if status > 499 {
-			log.E(reqLog, "Response failed.")
+			reqLog.WithError(err).Error("Response failed.")
 			return err
 		}
 
 		//Everything went ok
-		if cm := reqLog.Check(zap.InfoLevel, "Request successful."); cm.OK() {
-			cm.Write()
-		}
+		reqLog.Info("Request successful.")
 		return err
 	}
 }
 
 //NewNewRelicMiddleware returns the logger middleware
-func NewNewRelicMiddleware(app *App, theLogger zap.Logger) *NewRelicMiddleware {
+func NewNewRelicMiddleware(app *App, theLogger log.FieldLogger) *NewRelicMiddleware {
 	l := &NewRelicMiddleware{App: app, Logger: theLogger}
 	return l
 }
@@ -232,7 +229,7 @@ func NewNewRelicMiddleware(app *App, theLogger zap.Logger) *NewRelicMiddleware {
 //NewRelicMiddleware is responsible for logging to Zap all requests
 type NewRelicMiddleware struct {
 	App    *App
-	Logger zap.Logger
+	Logger log.FieldLogger
 }
 
 // Serve serves the middleware
@@ -247,7 +244,7 @@ func (nr *NewRelicMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		}()
 
 		err := next(c)
-		if err != nil {
+		if err != nil && c.Response().Status != 404 {
 			txn.NoticeError(err)
 			return err
 		}

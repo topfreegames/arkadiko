@@ -13,8 +13,6 @@ import (
 	"io/ioutil"
 
 	"github.com/labstack/echo"
-	"github.com/topfreegames/arkadiko/log"
-	"github.com/uber-go/zap"
 )
 
 type unauthorizationPayload struct {
@@ -25,10 +23,10 @@ type unauthorizationPayload struct {
 // UnauthorizeUsersHandler is the handler responsible for unauthorizing users in rooms
 func UnauthorizeUsersHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		lg := app.Logger.With(
-			zap.String("handler", "UnauthorizeUsersHandler"),
+		lg := app.Logger.WithField(
+			"handler", "UnauthorizeUsersHandler",
 		)
-		log.D(lg, "Retrieving redis connection...")
+		lg.Debug("Retrieving redis connection...")
 		redisConn := app.RedisClient.Pool.Get()
 		defer redisConn.Close()
 
@@ -49,23 +47,17 @@ func UnauthorizeUsersHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, "Missing user or rooms", c)
 		}
 		for _, topic := range jsonPayload.Rooms {
-			log.D(lg, "unauthorizing user", func(cm log.CM) {
-				cm.Write(zap.String("user", jsonPayload.UserID), zap.String("room", topic))
-			})
+			lg.Debug("unauthorizing user")
 			unauthorizationString := fmt.Sprintf("%s-%s", jsonPayload.UserID, topic)
 			err = WithSegment("redis", c, func() error {
 				_, err = redisConn.Do("del", unauthorizationString)
 				return err
 			})
 			if err != nil {
-				log.E(lg, "Failed to unauthorize user in redis.", func(cm log.CM) {
-					cm.Write(zap.Error(err))
-				})
+				lg.WithError(err).Error("Failed to unauthorize user in redis.")
 				return FailWith(500, err.Error(), c)
 			}
-			log.I(lg, "unauthorized user into rooms", func(cm log.CM) {
-				cm.Write(zap.String("user", jsonPayload.UserID), zap.String("room", topic))
-			})
+			lg.Info("unauthorized user into rooms")
 		}
 		return SucceedWith(map[string]interface{}{}, c)
 	}

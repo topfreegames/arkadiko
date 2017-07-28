@@ -19,9 +19,9 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/types"
 	"github.com/onsi/gomega"
+	log "github.com/sirupsen/logrus"
 	"github.com/topfreegames/arkadiko/api"
 	"github.com/topfreegames/arkadiko/remote"
-	"github.com/uber-go/zap"
 )
 
 //InitializeTestServer method
@@ -43,31 +43,21 @@ func BeforeOnce(beforeBlock func()) {
 
 // GetDefaultTestApp returns a new arkadiko API Application bound to 0.0.0.0:8888 for test
 func GetDefaultTestApp() *api.App {
-	logger := zap.New(
-		zap.NewJSONEncoder(),
-		zap.FatalLevel,
-	).With(
-		zap.String("source", "app"),
-	)
+	logger := log.WithField("source", "app")
 	app, err := api.GetApp("0.0.0.0", 8890, "../config/test.yml", false, logger)
 	if err != nil {
-		logger.Fatal("Could not get test application.", zap.Error(err))
+		logger.WithError(err).Fatal("Could not get test application.")
 	}
 	err = app.Configure()
 	if err != nil {
-		logger.Fatal("Could not get test application.", zap.Error(err))
+		logger.WithError(err).Fatal("Could not get test application.")
 	}
 	return app
 }
 
 // GetDefaultTestServer returns a new arkadiko RPC Server bound to 0.0.0.0:8891 for test
 func GetDefaultTestServer() (*remote.Server, error) {
-	logger := zap.New(
-		zap.NewJSONEncoder(),
-		zap.FatalLevel,
-	).With(
-		zap.String("source", "rpc"),
-	)
+	logger := log.WithField("source", "rpc")
 	server, err := remote.NewServer("0.0.0.0", 8891, "../config/test.yml", false, logger)
 	if err != nil {
 		return nil, err

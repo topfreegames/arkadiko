@@ -11,8 +11,9 @@ import (
 
 	"github.com/eclipse/paho.mqtt.golang"
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/topfreegames/arkadiko/mqttclient"
-	"github.com/uber-go/zap"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,12 +22,9 @@ import (
 var _ = Describe("MQTT Client", func() {
 	Describe("Specs", func() {
 
-		logger := zap.New(
-			zap.NewJSONEncoder(),
-			zap.FatalLevel,
-		).With(
-			zap.String("source", "app"),
-		)
+		l, _ := test.NewNullLogger()
+
+		logger := l.WithFields(log.Fields{})
 
 		Describe("Specs", func() {
 			It("It should send message and receive nil", func() {
