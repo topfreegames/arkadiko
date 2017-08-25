@@ -21,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"github.com/topfreegames/arkadiko/httpclient"
 	"github.com/topfreegames/arkadiko/mqttclient"
 	"github.com/topfreegames/arkadiko/redisclient"
 )
@@ -39,6 +40,7 @@ type App struct {
 	Config      *viper.Viper
 	Logger      log.FieldLogger
 	MqttClient  *mqttclient.MqttClient
+	HttpClient  *httpclient.HttpClient
 	RedisClient *redisclient.RedisClient
 	NewRelic    newrelic.Application
 }
@@ -52,6 +54,7 @@ func GetApp(host string, port int, configPath string, debug bool, logger log.Fie
 		Config:     viper.New(),
 		Debug:      debug,
 		MqttClient: nil,
+		HttpClient: nil,
 		Logger:     logger,
 	}
 	err := app.Configure()
@@ -206,6 +209,8 @@ func (app *App) configureApplication() error {
 	l.Debug("Connecting to mqtt...")
 	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil, l)
 	l.Info("Connected to mqtt successfully.")
+
+	app.HttpClient = httpclient.GetHttpClient(app.ConfigPath, l)
 
 	go func() {
 		app.Errors.Tick()

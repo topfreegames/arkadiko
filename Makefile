@@ -43,7 +43,7 @@ run:
 	@go run main.go start --rpc --rpc-port=52345 -d
 
 run-containers:
-	@cd test_containers && docker-compose up -d && cd ..
+	@cd test_containers && docker-compose up -d && sleep 30 && cd ..
 
 kill-containers:
 	@cd test_containers && docker-compose stop && cd ..

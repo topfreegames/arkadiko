@@ -1,10 +1,17 @@
-version: '2'
-
+version: '3'
 services:
-  mosquitto:
-    image: toke/mosquitto
+  emqtt:
+    image: tfgco/emq-docker:v2.3-tfg-beta8
+    environment:
+      - EMQ_LISTENER__API__MGMT=0.0.0.0:8080
     ports:
       - "1883:1883"
+      - "8080:8080"
+    healthcheck:
+      test: "nc -z 0.0.0.0 8080"
+      interval: 30s
+      timeout: 30s
+      retries: 3
   redis:
     image: redis:3.2
     ports:
