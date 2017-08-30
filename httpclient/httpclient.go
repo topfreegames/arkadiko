@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -67,7 +69,10 @@ func (mc *HttpClient) SendMessage(topic string, payload string, retainBool bool)
 
 	req.SetBasicAuth(mc.user, mc.password)
 	req.Header.Add("Content-Type", "application/json")
-	_, err := mc.httpClient.Do(req)
+	res, err := mc.httpClient.Do(req)
+
+	io.Copy(ioutil.Discard, res.Body)
+	res.Body.Close()
 
 	return err
 }
