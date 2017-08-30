@@ -1,7 +1,7 @@
 version: '3'
 services:
   emqtt:
-    image: tfgco/emq-docker:v2.3-tfg-beta8
+    image: tfgco/emq-docker:v2.3-tfg-beta10
     environment:
       - EMQ_LISTENER__API__MGMT=0.0.0.0:8080
     ports:

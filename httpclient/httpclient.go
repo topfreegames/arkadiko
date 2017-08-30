@@ -1,14 +1,15 @@
 package httpclient
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -23,12 +24,12 @@ type HttpClient struct {
 	httpClient    *http.Client
 }
 
-type mqttPost struct {
-	topic     string
-	payload   string
-	qos       int
-	retain    bool
-	client_id string
+type MqttPost struct {
+	Topic     string `json:"topic"`
+	Payload   string `json:"payload"`
+	Qos       int    `json:"qos"`
+	Retain    bool   `json:"retain"`
+	Client_id string `json:"client_id"`
 }
 
 var client *HttpClient
@@ -47,27 +48,25 @@ func GetHttpClient(configPath string, l log.FieldLogger) *HttpClient {
 }
 
 func (mc *HttpClient) SendMessage(topic string, payload string, retainBool bool) error {
-	retain := "0"
-	if retainBool {
-		retain = "1"
+	form := &MqttPost{
+		Topic:     topic,
+		Payload:   payload,
+		Retain:    retainBool,
+		Qos:       2,
+		Client_id: fmt.Sprintf("arkadiko-%s", uuid.NewV4().String()),
 	}
 
-	form := url.Values{
-		"topic":   {topic},
-		"message": {payload},
-		"retain":  {retain},
-		"qos":     {"2"},
-	}.Encode()
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(form)
 
 	req, _ := http.NewRequest(
 		"POST",
-		mc.HttpServerUrl+"/mqtt/publish",
-		strings.NewReader(form),
+		mc.HttpServerUrl+"/api/v2/mqtt/publish",
+		b,
 	)
 
 	req.SetBasicAuth(mc.user, mc.password)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Content-Length", strconv.Itoa(len(form)))
+	req.Header.Add("Content-Type", "application/json")
 	_, err := mc.httpClient.Do(req)
 
 	return err
@@ -84,7 +83,7 @@ func (mc *HttpClient) configure(l log.FieldLogger) {
 func (mc *HttpClient) setConfigurationDefaults() {
 	mc.Config.SetDefault("httpserver.url", "http://localhost:8080")
 	mc.Config.SetDefault("httpserver.user", "admin")
-	mc.Config.SetDefault("httpserver.pass", "admin")
+	mc.Config.SetDefault("httpserver.pass", "public")
 }
 
 func (mc *HttpClient) configureClient() {
