@@ -92,8 +92,12 @@ func (mc *HttpClient) setConfigurationDefaults() {
 }
 
 func (mc *HttpClient) configureClient() {
+
 	mc.httpClient = &http.Client{
 		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 1024,
+		},
 	}
 
 	mc.HttpServerUrl = mc.Config.GetString("httpserver.url")
