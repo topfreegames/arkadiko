@@ -68,7 +68,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		err = WithSegment("mqtt", c, func() error {
 			beforeMqttTime = time.Now()
 			app.HttpClient.SendMessage(
-				topic, string(b), retained,
+				c.Request().Context(), topic, string(b), retained,
 			)
 			afterMqttTime = time.Now()
 			return err

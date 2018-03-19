@@ -11,17 +11,17 @@ OS = "$(shell uname | awk '{ print tolower($$0) }')"
 setup:
 	@go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 	@go get github.com/onsi/ginkgo/ginkgo
-	@go get -u github.com/Masterminds/glide/...
+	@go get -u github.com/golang/dep/...
 	@go get -v github.com/spf13/cobra/cobra
-	@glide install
+	@dep ensure
 
 setup-ci:
 	@go get github.com/onsi/ginkgo/ginkgo
-	@go get -u github.com/Masterminds/glide/...
+	@go get -u github.com/golang/dep/...
 	@go get -v github.com/spf13/cobra/cobra
 	@go get github.com/topfreegames/goose/cmd/goose
 	@go get github.com/mattn/goveralls
-	@glide install
+	@dep ensure
 
 build:
 	@go build $(PACKAGES)

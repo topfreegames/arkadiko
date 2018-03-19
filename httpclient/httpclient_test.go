@@ -7,6 +7,7 @@
 package httpclient_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
@@ -25,6 +26,7 @@ var _ = Describe("HTTP Client", func() {
 		l, _ := test.NewNullLogger()
 
 		logger := l.WithFields(log.Fields{})
+		ctx := context.Background()
 
 		Describe("Specs", func() {
 			It("It should send message and receive nil", func() {
@@ -32,7 +34,7 @@ var _ = Describe("HTTP Client", func() {
 
 				Expect(mc.ConfigPath).To(Equal("../config/test.yml"))
 
-				err := mc.SendMessage("test", `{"message": "hello"}`, false)
+				err := mc.SendMessage(nil, "test", `{"message": "hello"}`, false)
 				Expect(err).To(BeNil())
 			})
 
@@ -44,7 +46,7 @@ var _ = Describe("HTTP Client", func() {
 				topic := uuid.NewV4().String()
 				expectedMsg := `{"message": "hello"}`
 
-				err := hc.SendMessage(topic, expectedMsg, true)
+				err := hc.SendMessage(nil, topic, expectedMsg, true)
 				Expect(err).NotTo(HaveOccurred())
 
 				mc := mqttclient.GetMqttClient("../config/test.yml", nil, logger)
@@ -69,7 +71,7 @@ var _ = Describe("HTTP Client", func() {
 				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
 
 				runtime := b.Time("runtime", func() {
-					err := mc.SendMessage("test", `{"message": "hello"}`)
+					err := mc.SendMessage(ctx, "test", `{"message": "hello"}`)
 					Expect(err).NotTo(HaveOccurred())
 				})
 
