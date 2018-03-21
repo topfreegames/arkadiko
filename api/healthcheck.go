@@ -8,11 +8,9 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/garyburd/redigo/redis"
 	"github.com/labstack/echo"
 )
 
@@ -21,25 +19,6 @@ func HealthCheckHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		c.Set("route", "Healthcheck")
 		workingString := app.Config.GetString("healthcheck.workingText")
-
-		err := WithSegment("redis", c, func() error {
-			var redisConn redis.Conn
-			WithSegment("redis", c, func() error {
-				redisConn = app.RedisClient.Pool.Get()
-				return nil
-			})
-			defer redisConn.Close()
-			res, err := redisConn.Do("ping")
-			if err != nil || res != "PONG" {
-				return fmt.Errorf("Error connecting to redis: %s", err)
-			}
-
-			return nil
-		})
-		if err != nil {
-			return FailWith(http.StatusInternalServerError, err.Error(), c)
-		}
-
 		workingString = strings.TrimSpace(workingString)
 		return c.String(http.StatusOK, workingString)
 	}

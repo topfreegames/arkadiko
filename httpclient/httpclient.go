@@ -2,6 +2,7 @@ package httpclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	ehttp "github.com/topfreegames/extensions/http"
 )
 
 type HttpClient struct {
@@ -49,7 +51,7 @@ func GetHttpClient(configPath string, l log.FieldLogger) *HttpClient {
 	return client
 }
 
-func (mc *HttpClient) SendMessage(topic string, payload string, retainBool bool) error {
+func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload string, retainBool bool) error {
 	form := &MqttPost{
 		Topic:     topic,
 		Payload:   payload,
@@ -66,6 +68,11 @@ func (mc *HttpClient) SendMessage(topic string, payload string, retainBool bool)
 		mc.HttpServerUrl+"/api/v2/mqtt/publish",
 		b,
 	)
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	req = req.WithContext(ctx)
 
 	req.SetBasicAuth(mc.user, mc.password)
 	req.Header.Add("Content-Type", "application/json")
@@ -99,6 +106,7 @@ func (mc *HttpClient) configureClient() {
 			MaxIdleConnsPerHost: 1024,
 		},
 	}
+	ehttp.Instrument(mc.httpClient)
 
 	mc.HttpServerUrl = mc.Config.GetString("httpserver.url")
 	mc.user = mc.Config.GetString("httpserver.user")

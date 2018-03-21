@@ -16,3 +16,6 @@ newrelic:
   key: ""
 sentry:
   url: ""
+jaeger:
+  disabled: true
+  samplingProbability: 0.001

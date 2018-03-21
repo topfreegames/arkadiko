@@ -7,6 +7,7 @@
 package mqttclient_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
@@ -25,6 +26,7 @@ var _ = Describe("MQTT Client", func() {
 		l, _ := test.NewNullLogger()
 
 		logger := l.WithFields(log.Fields{})
+		ctx := context.Background()
 
 		Describe("Specs", func() {
 			It("It should send message and receive nil", func() {
@@ -39,7 +41,7 @@ var _ = Describe("MQTT Client", func() {
 				err := mc.WaitForConnection(100)
 				Expect(err).NotTo(HaveOccurred())
 
-				err = mc.SendMessage("test", `{"message": "hello"}`)
+				err = mc.SendMessage(ctx, "test", `{"message": "hello"}`)
 				Expect(err).To(BeNil())
 			})
 
@@ -54,7 +56,7 @@ var _ = Describe("MQTT Client", func() {
 				topic := uuid.NewV4().String()
 				expectedMsg := `{"message": "hello"}`
 
-				err = mc.SendRetainedMessage(topic, expectedMsg)
+				err = mc.SendRetainedMessage(ctx, topic, expectedMsg)
 				Expect(err).NotTo(HaveOccurred())
 				//TODO: REALLY need to wait 50ms?
 				time.Sleep(50 * time.Millisecond)
@@ -80,7 +82,7 @@ var _ = Describe("MQTT Client", func() {
 				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
 
 				runtime := b.Time("runtime", func() {
-					err := mc.SendMessage("test", `{"message": "hello"}`)
+					err := mc.SendMessage(ctx, "test", `{"message": "hello"}`)
 					Expect(err).NotTo(HaveOccurred())
 				})
 

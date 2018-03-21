@@ -7,6 +7,7 @@
 package mqttclient
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -17,6 +18,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	emqtt "github.com/topfreegames/extensions/mqtt"
+	"github.com/topfreegames/extensions/mqtt/interfaces"
 
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/satori/go.uuid"
@@ -30,7 +33,7 @@ type MqttClient struct {
 	ConfigPath     string
 	Config         *viper.Viper
 	Logger         log.FieldLogger
-	MqttClient     mqtt.Client
+	MqttClient     interfaces.Client
 }
 
 var client *MqttClient
@@ -58,17 +61,17 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l 
 }
 
 // SendMessage sends the message with the given payload to topic
-func (mc *MqttClient) SendMessage(topic string, message string) error {
-	return mc.publishMessage(topic, message, false)
+func (mc *MqttClient) SendMessage(ctx context.Context, topic string, message string) error {
+	return mc.publishMessage(ctx, topic, message, false)
 }
 
 // SendRetainedMessage sends the message with the given payload to topic
-func (mc *MqttClient) SendRetainedMessage(topic string, message string) error {
-	return mc.publishMessage(topic, message, true)
+func (mc *MqttClient) SendRetainedMessage(ctx context.Context, topic string, message string) error {
+	return mc.publishMessage(ctx, topic, message, true)
 }
 
-func (mc *MqttClient) publishMessage(topic string, message string, retained bool) error {
-	token := mc.MqttClient.Publish(topic, 2, retained, message)
+func (mc *MqttClient) publishMessage(ctx context.Context, topic string, message string, retained bool) error {
+	token := mc.MqttClient.WithContext(ctx).Publish(topic, 2, retained, message)
 	result := token.WaitTimeout(time.Second * 5)
 
 	if result == false || token.Error() != nil {
@@ -174,9 +177,9 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	opts.SetMaxReconnectInterval(30 * time.Second)
 	opts.SetOnConnectHandler(onConnectHandler)
 	opts.SetAutoReconnect(true)
-	mc.MqttClient = mqtt.NewClient(opts)
 
-	c := mc.MqttClient
+	c := emqtt.NewClient(opts)
+	mc.MqttClient = c
 
 	if token := c.Connect(); token.Wait() && token.Error() != nil {
 		mc.Logger.WithError(token.Error()).Info("Error connecting to mqttserver")

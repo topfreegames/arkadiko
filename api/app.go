@@ -22,8 +22,9 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/topfreegames/arkadiko/httpclient"
+	jecho "github.com/topfreegames/arkadiko/jaeger/echo"
 	"github.com/topfreegames/arkadiko/mqttclient"
-	"github.com/topfreegames/arkadiko/redisclient"
+	"github.com/topfreegames/extensions/jaeger"
 )
 
 // JSON type
@@ -31,18 +32,17 @@ type JSON map[string]interface{}
 
 // App is a struct that represents a arkadiko API Application
 type App struct {
-	Debug       bool
-	Port        int
-	Host        string
-	ConfigPath  string
-	Errors      metrics.EWMA
-	App         *echo.Echo
-	Config      *viper.Viper
-	Logger      log.FieldLogger
-	MqttClient  *mqttclient.MqttClient
-	HttpClient  *httpclient.HttpClient
-	RedisClient *redisclient.RedisClient
-	NewRelic    newrelic.Application
+	Debug      bool
+	Port       int
+	Host       string
+	ConfigPath string
+	Errors     metrics.EWMA
+	App        *jecho.Echo
+	Config     *viper.Viper
+	Logger     log.FieldLogger
+	MqttClient *mqttclient.MqttClient
+	HttpClient *httpclient.HttpClient
+	NewRelic   newrelic.Application
 }
 
 // GetApp returns a new arkadiko API Application
@@ -76,6 +76,7 @@ func (app *App) Configure() error {
 	if err != nil {
 		return err
 	}
+	app.configureJaeger()
 
 	err = app.configureApplication()
 	if err != nil {
@@ -120,6 +121,24 @@ func (app *App) configureNewRelic() error {
 	return nil
 }
 
+func (app *App) configureJaeger() {
+	l := app.Logger.WithFields(log.Fields{
+		"source":    "app",
+		"operation": "configureJaeger",
+	})
+
+	opts := jaeger.Options{
+		Disabled:    app.Config.GetBool("jaeger.disabled"),
+		Probability: app.Config.GetFloat64("jaeger.samplingProbability"),
+		ServiceName: "arkadiko",
+	}
+
+	_, err := jaeger.Configure(opts)
+	if err != nil {
+		l.Error("Failed to initialize Jaeger.")
+	}
+}
+
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
 	app.Config.SetDefault("redis.password", "")
@@ -158,7 +177,7 @@ func (app *App) configureApplication() error {
 		"operation": "configureApplication",
 	})
 
-	app.App = echo.New()
+	app.App = jecho.New()
 	a := app.App
 
 	_, w, _ := os.Pipe()
@@ -189,22 +208,8 @@ func (app *App) configureApplication() error {
 
 	// MQTT Route
 	a.POST("/sendmqtt/*", SendMqttHandler(app))
-	a.POST("/authorize_user", AuthorizeUsersHandler(app))
-	a.POST("/unauthorize_user", UnauthorizeUsersHandler(app))
 
 	app.Errors = metrics.NewEWMA15()
-
-	redisHost := app.Config.GetString("redis.host")
-	redisPort := app.Config.GetInt("redis.port")
-	redisPass := app.Config.GetString("redis.password")
-	rl := l.WithFields(log.Fields{
-		"host": redisHost,
-		"port": redisPort,
-	})
-
-	rl.Debug("Connecting to redis...")
-	app.RedisClient = redisclient.GetRedisClient(redisHost, redisPort, redisPass, l)
-	rl.Info("Connected to redis successfully.")
 
 	l.Debug("Connecting to mqtt...")
 	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil, l)

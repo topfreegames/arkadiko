@@ -19,22 +19,20 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/arkadiko/mqttclient"
-	"github.com/topfreegames/arkadiko/redisclient"
 	context "golang.org/x/net/context"
 )
 
 //Server represents the server that replies to RPC messages
 type Server struct {
-	Debug       bool
-	Port        int
-	Host        string
-	ConfigPath  string
-	Config      *viper.Viper
-	Logger      log.FieldLogger
-	MqttClient  *mqttclient.MqttClient
-	RedisClient *redisclient.RedisClient
-	NewRelic    newrelic.Application
-	grpcServer  *grpc.Server
+	Debug      bool
+	Port       int
+	Host       string
+	ConfigPath string
+	Config     *viper.Viper
+	Logger     log.FieldLogger
+	MqttClient *mqttclient.MqttClient
+	NewRelic   newrelic.Application
+	grpcServer *grpc.Server
 }
 
 //NewServer returns a new RPC Server
@@ -72,20 +70,9 @@ func (s *Server) configure() error {
 		return err
 	}
 
-	redisHost := s.Config.GetString("redis.host")
-	redisPort := s.Config.GetInt("redis.port")
-	redisPass := s.Config.GetString("redis.password")
 	defaultLogger := s.Logger.WithFields(log.Fields{})
-	rl := s.Logger.WithFields(log.Fields{
-		"host": redisHost,
-		"port": redisPort,
-	})
 
-	rl.Debug("Connecting to redis...")
-	s.RedisClient = redisclient.GetRedisClient(redisHost, redisPort, redisPass, defaultLogger)
-	rl.Info("Connected to redis successfully.")
-
-	rl.Debug("Connecting to mqtt...")
+	defaultLogger.Debug("Connecting to mqtt...")
 	s.MqttClient = mqttclient.GetMqttClient(s.ConfigPath, nil, defaultLogger)
 	defaultLogger.Info("Connected to mqtt successfully.")
 
@@ -165,6 +152,7 @@ func (s *Server) configureRPC() error {
 
 	opts := []grpc.ServerOption{}
 
+	//TODO: instrument with Jaeger
 	s.grpcServer = grpc.NewServer(opts...)
 	RegisterMQTTServer(s.grpcServer, s)
 	l.Debug("MQTT Server configured properly")
@@ -204,10 +192,10 @@ func (s *Server) SendMessage(ctx context.Context, message *Message) (*SendMessag
 	var err error
 	if message.Retained {
 		l.Debug("Sending retained message.")
-		err = s.MqttClient.SendRetainedMessage(message.Topic, message.Payload)
+		err = s.MqttClient.SendRetainedMessage(ctx, message.Topic, message.Payload)
 	} else {
 		l.Debug("Sending message.")
-		err = s.MqttClient.SendMessage(message.Topic, message.Payload)
+		err = s.MqttClient.SendMessage(ctx, message.Topic, message.Payload)
 	}
 	if err != nil {
 		l.WithError(err).Error("Failed to send message to MQTT.")
