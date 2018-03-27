@@ -43,6 +43,7 @@ type App struct {
 	MqttClient *mqttclient.MqttClient
 	HttpClient *httpclient.HttpClient
 	NewRelic   newrelic.Application
+	DDStatsD   *DogStatsD
 }
 
 // GetApp returns a new arkadiko API Application
@@ -76,6 +77,12 @@ func (app *App) Configure() error {
 	if err != nil {
 		return err
 	}
+
+	err = app.configureStatsD()
+	if err != nil {
+		return err
+	}
+
 	app.configureJaeger()
 
 	err = app.configureApplication()
@@ -94,6 +101,23 @@ func (app *App) configureSentry() {
 	sentryURL := app.Config.GetString("sentry.url")
 	raven.SetDSN(sentryURL)
 	l.Info("Configured sentry successfully.")
+}
+
+func (app *App) configureStatsD() error {
+	l := app.Logger.WithFields(log.Fields{
+		"source":    "app",
+		"operation": "configureStatsD",
+	})
+
+	ddstatsd, err := NewDogStatsD(app.Config)
+	if err != nil {
+		l.WithError(err).Error("Failed to initialize DogStatsD.")
+		return err
+	}
+	app.DDStatsD = ddstatsd
+	l.Info("Initialized DogStatsD successfully.")
+
+	return nil
 }
 
 func (app *App) configureNewRelic() error {
@@ -198,6 +222,7 @@ func (app *App) configureApplication() error {
 	a.Pre(middleware.RemoveTrailingSlash())
 	a.Use(NewLoggerMiddleware(app.Logger).Serve)
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
+	a.Use(NewResponseTimeMetricsMiddleware(app.DDStatsD).Serve)
 	a.Use(NewVersionMiddleware().Serve)
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
