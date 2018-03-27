@@ -17,4 +17,4 @@ dogstatsd:
   prefix: arkadiko.
   tags_prefix: ""
   rate: 1
-
+  
