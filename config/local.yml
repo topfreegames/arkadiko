@@ -19,3 +19,8 @@ sentry:
 jaeger:
   disabled: true
   samplingProbability: 0.001
+dogstatsd:
+  host: localhost:8125
+  prefix: arkadiko.
+  tags_prefix: ""
+  rate: 1

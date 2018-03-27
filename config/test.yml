@@ -12,3 +12,8 @@ redis:
 jaeger:
   disabled: false
   samplingProbability: 1.0
+dogstatsd:
+  host: localhost:8125
+  prefix: arkadiko.
+  tags_prefix: ""
+  rate: 1
