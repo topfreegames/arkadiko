@@ -18,6 +18,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const responseTimeMillisecondsMetricName = "response_time_milliseconds"
+
 //NewVersionMiddleware with API version
 func NewVersionMiddleware() *VersionMiddleware {
 	return &VersionMiddleware{
@@ -71,6 +73,42 @@ func (s *SentryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			raven.CaptureError(err, tags)
 		}
 		return err
+	}
+}
+
+// ResponseTimeMetricsMiddleware struct encapsulating DDStatsD
+type ResponseTimeMetricsMiddleware struct {
+	DDStatsD *DogStatsD
+}
+
+//ResponseTimeMetricsMiddleware returns a new ResponseTimeMetricsMiddleware
+func NewResponseTimeMetricsMiddleware(ddStatsD *DogStatsD) *ResponseTimeMetricsMiddleware {
+	return &ResponseTimeMetricsMiddleware{
+		DDStatsD: ddStatsD,
+	}
+}
+
+//ResponseTimeMetricsMiddleware is a middleware to measure the response time
+//of a route and send it do StatsD
+func (responseTimeMiddleware ResponseTimeMetricsMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		startTime := time.Now()
+		result := next(c)
+		status := c.Response().Status
+		route := c.Path()
+		method := c.Request().Method
+
+		timeUsed := time.Since(startTime)
+
+		tags := []string{
+			fmt.Sprintf("route:%s", route),
+			fmt.Sprintf("method:%s", method),
+			fmt.Sprintf("status:%d", status),
+		}
+
+		responseTimeMiddleware.DDStatsD.Timing(responseTimeMillisecondsMetricName, timeUsed, tags...)
+
+		return result
 	}
 }
 
