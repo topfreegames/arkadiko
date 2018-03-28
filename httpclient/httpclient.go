@@ -78,10 +78,14 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 	req.Header.Add("Content-Type", "application/json")
 	res, err := mc.httpClient.Do(req)
 
+	if err != nil {
+		return err
+	}
+
 	io.Copy(ioutil.Discard, res.Body)
 	res.Body.Close()
 
-	return err
+	return nil
 }
 
 func (mc *HttpClient) configure(l log.FieldLogger) {
