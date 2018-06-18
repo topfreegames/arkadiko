@@ -43,7 +43,9 @@ run:
 	@go run main.go start --rpc --rpc-port=52345 -d
 
 run-containers:
-	@cd test_containers && docker-compose up -d && sleep 30 && cd ..
+	@cd test_containers && docker-compose up -d && cd ..
+	@/bin/bash -c "until curl -s localhost:8080 > /dev/null; do echo 'Waiting for EMQTT...' && sleep 1; done"
+	@/bin/bash -c "until curl -s localhost:4444 > /dev/null; do echo 'Waiting for Redis...' && sleep 1; done"
 
 kill-containers:
 	@cd test_containers && docker-compose stop && cd ..
