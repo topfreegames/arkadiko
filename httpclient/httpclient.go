@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -17,6 +18,21 @@ import (
 	"github.com/spf13/viper"
 	ehttp "github.com/topfreegames/extensions/http"
 )
+
+// HTTPError is the error in a http call
+type HTTPError struct {
+	StatusCode int
+}
+
+// Error returns an http error string
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("received status %d", e.StatusCode)
+}
+
+// NewHTTPError is the HTTPError ctor
+func NewHTTPError(statusCode int) *HTTPError {
+	return &HTTPError{statusCode}
+}
 
 type HttpClient struct {
 	HttpServerUrl string
@@ -38,6 +54,32 @@ type MqttPost struct {
 
 var client *HttpClient
 var once sync.Once
+
+func getHTTPTransport(
+	maxIdleConns, maxIdleConnsPerHost int,
+) http.RoundTripper {
+	if _, ok := http.DefaultTransport.(*http.Transport); !ok {
+		return http.DefaultTransport // tests use a mock transport
+	}
+
+	// We can't get http.DefaultTransport here and update its
+	// fields since it's an exported variable, so other libs could
+	// also change it and overwrite. This hardcoded values are copied
+	// from http.DefaultTransport but could be configurable too.
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          maxIdleConns,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConnsPerHost:   maxIdleConnsPerHost,
+	}
+}
 
 // GetMqttClient creates the mqttclient and returns it
 func GetHttpClient(configPath string, l log.FieldLogger) *HttpClient {
@@ -63,12 +105,14 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(form)
 
-	req, _ := http.NewRequest(
+	req, err := http.NewRequest(
 		"POST",
 		mc.HttpServerUrl+"/api/v2/mqtt/publish",
 		b,
 	)
-
+	if err != nil {
+		return err
+	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -77,14 +121,16 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 	req.SetBasicAuth(mc.user, mc.password)
 	req.Header.Add("Content-Type", "application/json")
 	res, err := mc.httpClient.Do(req)
-
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	io.Copy(ioutil.Discard, res.Body)
-	res.Body.Close()
 
+	if res.StatusCode > 399 {
+		return NewHTTPError(res.StatusCode)
+	}
 	return nil
 }
 
@@ -100,15 +146,19 @@ func (mc *HttpClient) setConfigurationDefaults() {
 	mc.Config.SetDefault("httpserver.url", "http://localhost:8080")
 	mc.Config.SetDefault("httpserver.user", "admin")
 	mc.Config.SetDefault("httpserver.pass", "public")
+	mc.Config.SetDefault("httpserver.timeout", 500)
+	mc.Config.SetDefault("httpserver.maxIdleConnsPerHost", http.DefaultMaxIdleConnsPerHost)
+	mc.Config.SetDefault("httpserver.maxIdleConns", 100)
 }
 
 func (mc *HttpClient) configureClient() {
+	timeout := time.Duration(mc.Config.GetInt("httpserver.timeout")) * time.Millisecond
+	maxIdleConns := mc.Config.GetInt("httpserver.maxIdleConns")
+	maxIdleConnsPerHost := mc.Config.GetInt("httpserver.maxIdleConnsPerHost")
 
 	mc.httpClient = &http.Client{
-		Timeout: 10 * time.Second,
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: 1024,
-		},
+		Transport: getHTTPTransport(maxIdleConns, maxIdleConnsPerHost),
+		Timeout:   timeout,
 	}
 	ehttp.Instrument(mc.httpClient)
 

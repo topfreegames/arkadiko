@@ -16,6 +16,7 @@ import (
 
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
+	"github.com/topfreegames/arkadiko/httpclient"
 )
 
 // SendMqttHandler is the handler responsible for sending messages to mqtt
@@ -67,14 +68,30 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		err = WithSegment("mqtt", c, func() error {
 			beforeMqttTime = time.Now()
-			app.HttpClient.SendMessage(
+			httpError := app.HttpClient.SendMessage(
 				c.Request().Context(), topic, string(b), retained,
 			)
 			afterMqttTime = time.Now()
-			return err
+			return httpError
 		})
 
+		status := 200
+		if err != nil {
+			status = 500
+			if e, ok := err.(*httpclient.HTTPError); ok {
+				status = e.StatusCode
+			}
+		}
+		tags := []string{
+			fmt.Sprintf("error:%t", err != nil),
+			fmt.Sprintf("status:%d", status),
+			fmt.Sprintf("retained:%t", retained),
+		}
+		if source != "" {
+			tags = append(tags, fmt.Sprintf("requestor:%s", source))
+		}
 		mqttLatency = afterMqttTime.Sub(beforeMqttTime)
+		app.DDStatsD.Timing("mqtt_latency", mqttLatency, tags...)
 		lg = lg.WithField("mqttLatency", mqttLatency.Nanoseconds())
 		lg.Debug("sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
@@ -82,7 +99,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		c.Set("retained", retained)
 
 		if err != nil {
-			return FailWith(400, err.Error(), c)
+			return FailWith(500, err.Error(), c)
 		}
 		return c.String(http.StatusOK, workingString)
 	}
