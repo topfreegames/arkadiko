@@ -43,6 +43,8 @@ var _ = Describe("MQTT Client", func() {
 
 				err = mc.SendMessage(ctx, "test", `{"message": "hello"}`)
 				Expect(err).To(BeNil())
+
+				Expect(connected).To(BeTrue())
 			})
 
 			It("It should send retained message", func() {
