@@ -253,7 +253,7 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		//Everything went ok
-		reqLog.Info("Request successful.")
+		reqLog.Debug("Request successful.")
 		return err
 	}
 }

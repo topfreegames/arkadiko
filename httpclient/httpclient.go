@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -81,7 +80,7 @@ func getHTTPTransport(
 	}
 }
 
-// GetMqttClient creates the mqttclient and returns it
+// GetHqttClient creates the hqttclient and returns it
 func GetHttpClient(configPath string, l log.FieldLogger) *HttpClient {
 	once.Do(func() {
 		client = &HttpClient{
@@ -93,7 +92,13 @@ func GetHttpClient(configPath string, l log.FieldLogger) *HttpClient {
 	return client
 }
 
+// SendMessage sends a message to mqqt using a HTTP POST request
 func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload string, retainBool bool) error {
+	lg := mc.Logger.WithFields(log.Fields{
+		"topic":   topic,
+		"retain":  retainBool,
+		"payload": payload,
+	})
 	form := &MqttPost{
 		Topic:     topic,
 		Payload:   payload,
@@ -111,6 +116,7 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 		b,
 	)
 	if err != nil {
+		lg.WithError(err).Error("failed to build http request")
 		return err
 	}
 	if ctx == nil {
@@ -122,14 +128,21 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 	req.Header.Add("Content-Type", "application/json")
 	res, err := mc.httpClient.Do(req)
 	if err != nil {
+		lg.WithError(err).Error("failed to make request")
 		return err
 	}
 	defer res.Body.Close()
 
-	io.Copy(ioutil.Discard, res.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		lg.WithError(err).Error("failed to read body")
+		return err
+	}
 
 	if res.StatusCode > 399 {
-		return NewHTTPError(res.StatusCode)
+		err := NewHTTPError(res.StatusCode)
+		lg.WithError(err).WithField("body", body).Error("failed request")
+		return err
 	}
 	return nil
 }
