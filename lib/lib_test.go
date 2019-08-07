@@ -63,30 +63,6 @@ var _ = Describe("Lib", func() {
 			Expect(response.Topic).To(Equal("topic"))
 		})
 
-		It("Should URL escape topic", func() {
-			httpmock.RegisterResponder(
-				"POST", "http://arkadiko/sendmqtt/some%2Ftopic?retained=true",
-				httpmock.NewStringResponder(200, `{
-            "payload": {"message": "message"},
-            "retained": true,
-            "topic": "some/topic"
-          }`,
-				),
-			)
-
-			payload := map[string]string{
-				"message": "message",
-			}
-
-			response, err := arkadiko.SendMQTT(context.Background(), "some/topic", payload, true)
-
-			Expect(err).To(BeNil())
-			Expect(response).ToNot(BeNil())
-			Expect(response.Payload).To(BeEquivalentTo(`{"message": "message"}`))
-			Expect(response.Retained).To(BeTrue())
-			Expect(response.Topic).To(Equal("some/topic"))
-		})
-
 		It("Should return meaningful error", func() {
 			httpmock.RegisterResponder(
 				"POST", "http://arkadiko/sendmqtt/topic?retained=false",

@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/spf13/viper"
@@ -90,7 +89,7 @@ func getHTTPTransport(maxIdleConns, maxIdleConnsPerHost int) http.RoundTripper {
 // SendMQTT publishes an MQTT message on the given topic
 func (a *Arkadiko) SendMQTT(ctx context.Context, topic string, payload interface{}, retained bool,
 ) (*SendMQTTResponse, error) {
-	path := fmt.Sprintf("/sendmqtt/%s?retained=%t", url.QueryEscape(topic), retained)
+	path := fmt.Sprintf("/sendmqtt/%s?retained=%t", topic, retained)
 
 	response, err := a.sendRequest(ctx, "POST", path, payload)
 	if err != nil {
