@@ -43,10 +43,10 @@ var _ = Describe("Lib", func() {
 			httpmock.RegisterResponder(
 				"POST", "http://arkadiko/sendmqtt/topic?retained=false",
 				httpmock.NewStringResponder(200, `{
-            "payload": {"message": "message"},
-            "retained": false,
-            "topic": "topic"
-          }`,
+						"payload": {"message": "message"},
+						"retained": false,
+						"topic": "topic"
+					}`,
 				),
 			)
 
