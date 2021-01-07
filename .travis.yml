@@ -9,9 +9,6 @@ services:
   - docker
   - redis-server
 
-install:
-  - make setup-ci
-
 before_script:
   - make run-containers
   - sleep 10
