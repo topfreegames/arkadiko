@@ -1,12 +1,18 @@
-version: '3'
+version: '3.5'
 services:
   emqtt:
     image: tfgco/emq-docker:v2.3-tfg-beta10
     environment:
-      - EMQ_LISTENER__API__MGMT=0.0.0.0:8080
+      - "EMQ_NAME=emq"
+      - "EMQ_NODE__COOKIE=ef16498f66804df1cc6172f6996d5492"
+      - "EMQ_WAIT_TIME=60"
+      - "EMQ_LISTENER__API__MGMT=0.0.0.0:8080"
+    restart: always
     ports:
       - "1883:1883"
       - "8080:8080"
+      - "18083:18083"
+
     healthcheck:
       test: "nc -z 0.0.0.0 8080"
       interval: 30s
