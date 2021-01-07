@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package remote;
 
+option go_package = "github.com/topfreegames/arkadiko/remote";
+
+
 // Interface exported by the server.
 service MQTT {
   // Sends the specified message to the specified topic.

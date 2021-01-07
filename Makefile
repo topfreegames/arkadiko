@@ -4,31 +4,16 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-PACKAGES = $(shell glide novendor)
-GODIRS = $(shell go list ./... | grep -v /vendor/ | sed s@github.com/topfreegames/arkadiko@.@g | egrep -v "^[.]$$")
 OS = "$(shell uname | awk '{ print tolower($$0) }')"
 
-setup:
-	@go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
-	@go get github.com/onsi/ginkgo/ginkgo
-	@go get -u github.com/golang/dep/...
-	@go get -v github.com/spf13/cobra/cobra
-	@dep ensure
-
-setup-ci:
-	@go get github.com/onsi/ginkgo/ginkgo
-	@go get -u github.com/golang/dep/...
-	@go get -v github.com/spf13/cobra/cobra
-	@go get github.com/topfreegames/goose/cmd/goose
-	@go get github.com/mattn/goveralls
-	@dep ensure
-
 build:
-	@go build $(PACKAGES)
-	@go build
+	@go build -mod vendor -a -installsuffix cgo -o . .
 
-install:
-	@go install
+vendor:
+	@go mod vendor
+
+tidy:
+	@go mod tidy
 
 # get a redis instance up (localhost:4444)
 redis:
@@ -57,7 +42,7 @@ run-tests: kill-containers run-containers
 	@make kill-containers
 
 run-test unit:
-	@ginkgo -r --cover .
+	@go run github.com/onsi/ginkgo/ginkgo -r --cover .
 
 test-coverage-run:
 	@mkdir -p _build
@@ -105,6 +90,7 @@ cross-exec:
 	@chmod +x bin/*
 
 build_proto:
+	@go get -v github.com/golang/protobuf/protoc-gen-go
 	@protoc --go_out=plugins=grpc:. ./remote/mqtt.proto
 
 kill-bg:

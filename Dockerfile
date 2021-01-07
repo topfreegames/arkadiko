@@ -4,23 +4,28 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-FROM golang:1.8-alpine3.6
+FROM golang:1.15-alpine AS build
 
-MAINTAINER TFG Co <backend@tfgco.com>
+LABEL app=arkadiko
+LABEL builder=true
+LABEL maintainer='TFG CO <backend@tfgco.com>'
 
-EXPOSE 8890
+WORKDIR /src
 
-RUN apk update
-RUN apk add bash git make g++ apache2-utils
+COPY vendor ./vendor
 
-# http://stackoverflow.com/questions/34729748/installed-go-binary-not-found-in-path-on-alpine-linux-docker
-RUN mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
+COPY . . 
 
-ADD bin/arkadiko-linux-x86_64 /go/bin/arkadiko
-RUN chmod +x /go/bin/arkadiko
+# Build a static binary.
+RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -installsuffix cgo -o arkadiko .
 
-RUN mkdir -p /home/arkadiko/
-ADD ./config/local.yml /home/arkadiko/local.yml
+# Verify if the binary is truly static.
+RUN ldd /src/arkadiko 2>&1 | grep -q 'Not a valid dynamic program'
+
+FROM alpine
+
+COPY --from=build /src/arkadiko ./arkadiko
+COPY --from=build /src/config ./config
 
 ENV ARKADIKO_MQTTSERVER_HOST localhost
 ENV ARKADIKO_MQTTSERVER_PORT 1883
@@ -34,4 +39,8 @@ ENV USE_BASICAUTH false
 ENV ARKADIKO_BASICAUTH_USERNAME ""
 ENV ARKADIKO_BASICAUTH_PASSWORD ""
 
-CMD /go/bin/arkadiko start --bind 0.0.0.0 --port 8890 --config /home/arkadiko/local.yml
+ENTRYPOINT ["./arkadiko", "start", "--bind", "0.0.0.0", "--port", "8890", "--config", "/config/local.yml"]
+EXPOSE 8890
+
+LABEL app=arkadiko
+LABEL maintainer='TFG CO <backend@tfgco.com>'
