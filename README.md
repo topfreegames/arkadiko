@@ -5,12 +5,6 @@
 
 A bridge from HTTP to MQTT developed in go
 
-### Installing
-
-```
-make setup
-```
-
 ### Usage
 
 First you need to build:
