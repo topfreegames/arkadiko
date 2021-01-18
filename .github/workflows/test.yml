@@ -30,7 +30,7 @@ jobs:
         run: go mod download
       - name: Run tests
         run: make test-ci
-      - name: Send coverage
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ~/go/bin/goveralls -coverprofile=coverprofile.out -service=github
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
