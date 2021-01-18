@@ -32,5 +32,5 @@ jobs:
         run: make test-ci
       - name: Coveralls
         uses: coverallsapp/github-action@master
-          with:
-            github-token: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
