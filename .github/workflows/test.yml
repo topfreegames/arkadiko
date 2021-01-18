@@ -30,8 +30,11 @@ jobs:
         run: go mod download
       - name: Run tests
         run: make test-ci
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: _build/test-coverage-all.out
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=covprofile -service=github
