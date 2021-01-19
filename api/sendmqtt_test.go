@@ -128,6 +128,6 @@ var _ = Describe("Send to MQTT Handler", func() {
 			payload := string(data["payload"].([]byte))
 			status, body := PostBody(app, "/sendmqtt/test/topic", payload)
 			Expect(status).To(Equal(http.StatusOK), string(body))
-		}, 0.02)
+		}, 0.015)
 	})
 })
