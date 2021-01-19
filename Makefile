@@ -36,7 +36,7 @@ kill-containers:
 	@cd test_containers && docker-compose stop && cd ..
 
 test-ci: run-containers
-	@sleep 60
+	@sleep 90
 	@make run-test coverage
 
 test: run-tests
