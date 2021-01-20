@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
 	"google.golang.org/grpc"
 
@@ -162,6 +163,8 @@ func (s *Server) configureRPC() error {
 
 // Start starts listening for web requests at specified host and port
 func (s *Server) Start() error {
+	var wg sync.WaitGroup
+
 	l := s.Logger.WithFields(log.Fields{
 		"source":    "rpc",
 		"operation": "Start",
@@ -178,7 +181,15 @@ func (s *Server) Start() error {
 		"port": s.Port,
 	}).Info("RPC Server started.")
 
-	s.grpcServer.Serve(lis)
+	wg.Add(1)
+	go func(s *Server, lis net.Listener) {
+		wg.Done()
+		if err := s.grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Server exited with error: %v", err)
+		}
+	}(s, lis)
+	wg.Wait()
+
 	return nil
 }
 

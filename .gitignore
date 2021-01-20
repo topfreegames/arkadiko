@@ -5,3 +5,4 @@ coverage.out
 vendor/
 bin/
 _build/
+.idea

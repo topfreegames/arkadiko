@@ -88,7 +88,7 @@ var _ = Describe("MQTT Client", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 
-				Expect(runtime.Seconds()).Should(BeNumerically("<", 0.01), "Sending message shouldn't take too long.")
+				Expect(runtime.Seconds()).Should(BeNumerically("<", 0.015), "Sending message shouldn't take too long.")
 			}, 20)
 		})
 	})
