@@ -32,7 +32,7 @@ var _ = Describe("RPC Server", func() {
 		Describe("sending messages", func() {
 			It("Should send message", func() {
 				s, err := GetDefaultTestServer()
-					s.Start()
+				s.Start()
 
 				topic := uuid.NewV4().String()
 
