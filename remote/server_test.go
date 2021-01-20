@@ -32,11 +32,7 @@ var _ = Describe("RPC Server", func() {
 		Describe("sending messages", func() {
 			It("Should send message", func() {
 				s, err := GetDefaultTestServer()
-				Expect(err).NotTo(HaveOccurred())
-				go (func() {
-					err := s.Start()
-					Expect(err).NotTo(HaveOccurred())
-				})()
+					s.Start()
 
 				topic := uuid.NewV4().String()
 
@@ -53,7 +49,7 @@ var _ = Describe("RPC Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).NotTo(BeNil())
 
-				time.Sleep(50 * time.Millisecond)
+				//time.Sleep(50 * time.Millisecond)
 
 				client := s.MqttClient
 				var msg mqtt.Message
