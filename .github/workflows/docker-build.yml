@@ -26,7 +26,7 @@ jobs:
         - name: Download dependencies
           run: go mod download
         - name: Run tests
-          run: make test-ci
+          run: make test
   push_to_registry:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
