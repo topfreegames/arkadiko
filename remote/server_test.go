@@ -49,8 +49,6 @@ var _ = Describe("RPC Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).NotTo(BeNil())
 
-				//time.Sleep(50 * time.Millisecond)
-
 				client := s.MqttClient
 				var msg mqtt.Message
 				var onMessageHandler = func(client mqtt.Client, message mqtt.Message) {
