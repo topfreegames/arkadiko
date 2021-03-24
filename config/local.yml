@@ -7,11 +7,6 @@ mqttserver:
   pass: password
   usetls: false
   insecure_tls: true
-redis:
-  host: localhost
-  port: 4444
-  password: ""
-  maxPoolSize: 20
 newrelic:
   key: ""
 sentry:

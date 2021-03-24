@@ -15,14 +15,6 @@ vendor:
 tidy:
 	@go mod tidy
 
-# get a redis instance up (localhost:4444)
-redis:
-	@redis-server ./redis.conf; sleep 1
-	@redis-cli -p 4444 info > /dev/null
-
-# kill this redis instance (localhost:4444)
-kill-redis:
-	@-redis-cli -p 4444 shutdown
 
 run:
 	@go run main.go start --rpc --rpc-port=52345 -d
@@ -30,7 +22,6 @@ run:
 run-containers:
 	@cd test_containers && docker-compose up -d && cd ..
 	@/bin/bash -c "until curl -s localhost:8080 > /dev/null; do echo 'Waiting for EMQTT...' && sleep 1; done"
-	@/bin/bash -c "until curl -s localhost:4444 > /dev/null; do echo 'Waiting for Redis...' && sleep 1; done"
 
 kill-containers:
 	@cd test_containers && docker-compose stop && cd ..
