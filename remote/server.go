@@ -117,7 +117,6 @@ func (s *Server) configureNewRelic() error {
 
 func (s *Server) setConfigurationDefaults() {
 	s.Config.SetDefault("healthcheck.workingText", "WORKING")
-	s.Config.SetDefault("redis.password", "")
 }
 
 func (s *Server) loadConfiguration() error {

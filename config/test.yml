@@ -5,10 +5,6 @@ mqttserver:
   pass: password
   usetls: false
   insecure_tls: true
-redis:
-  host: localhost
-  port: 4444
-  maxPoolSize: 20
 jaeger:
   disabled: false
   samplingProbability: 1.0

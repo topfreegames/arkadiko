@@ -165,7 +165,6 @@ func (app *App) configureJaeger() {
 
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
-	app.Config.SetDefault("redis.password", "")
 }
 
 func (app *App) loadConfiguration() error {
