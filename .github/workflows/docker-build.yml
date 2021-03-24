@@ -29,8 +29,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: '1.15'
+      - name: Download dependencies
+        run: go mod download
       - name: Check out the repo
         uses: actions/checkout@v2
+      -
       - name: Push to Docker Hub
         uses: docker/build-push-action@v1
         with:
