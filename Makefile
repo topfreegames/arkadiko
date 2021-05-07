@@ -21,7 +21,7 @@ run:
 
 run-containers:
 	@cd test_containers && docker-compose up -d && cd ..
-	@/bin/bash -c "until curl -s localhost:8080 > /dev/null; do echo 'Waiting for EMQTT...' && sleep 1; done"
+	@/bin/bash -c "until curl -s localhost:8081 > /dev/null; do echo 'Waiting for EMQTT...' && sleep 1; done"
 
 kill-containers:
 	@cd test_containers && docker-compose stop && cd ..

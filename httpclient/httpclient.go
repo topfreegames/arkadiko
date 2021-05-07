@@ -156,7 +156,7 @@ func (mc *HttpClient) configure(l log.FieldLogger) {
 }
 
 func (mc *HttpClient) setConfigurationDefaults() {
-	mc.Config.SetDefault("httpserver.url", "http://localhost:8080")
+	mc.Config.SetDefault("httpserver.url", "http://localhost:8081")
 	mc.Config.SetDefault("httpserver.user", "admin")
 	mc.Config.SetDefault("httpserver.pass", "public")
 	mc.Config.SetDefault("httpserver.timeout", 500)
