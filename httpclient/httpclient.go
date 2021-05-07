@@ -44,11 +44,11 @@ type HttpClient struct {
 }
 
 type MqttPost struct {
-	Topic     string `json:"topic"`
-	Payload   string `json:"payload"`
-	Qos       int    `json:"qos"`
-	Retain    bool   `json:"retain"`
-	Client_id string `json:"client_id"`
+	Topic    string `json:"topic"`
+	Payload  string `json:"payload"`
+	Qos      int    `json:"qos"`
+	Retain   bool   `json:"retain"`
+	ClientId string `json:"clientid"`
 }
 
 var client *HttpClient
@@ -100,11 +100,11 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 		"payload": payload,
 	})
 	form := &MqttPost{
-		Topic:     topic,
-		Payload:   payload,
-		Retain:    retainBool,
-		Qos:       2,
-		Client_id: fmt.Sprintf("arkadiko-%s", uuid.NewV4().String()),
+		Topic:    topic,
+		Payload:  payload,
+		Retain:   retainBool,
+		Qos:      2,
+		ClientId: fmt.Sprintf("arkadiko-%s", uuid.NewV4().String()),
 	}
 
 	b := new(bytes.Buffer)
@@ -112,7 +112,7 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 
 	req, err := http.NewRequest(
 		"POST",
-		mc.HttpServerUrl+"/api/v2/mqtt/publish",
+		mc.HttpServerUrl+"/api/v4/mqtt/publish",
 		b,
 	)
 	if err != nil {
