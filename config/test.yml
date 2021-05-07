@@ -13,3 +13,7 @@ dogstatsd:
   prefix: arkadiko.
   tags_prefix: ""
   rate: 1
+httpserver:
+  url: "http://localhost:8081"
+  user: user
+  pass: pass
