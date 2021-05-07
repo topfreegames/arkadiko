@@ -16,6 +16,7 @@ import (
 
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
+	"github.com/topfreegames/arkadiko/httpclient"
 )
 
 // SendMqttHandler is the handler responsible for sending messages to mqtt
@@ -67,18 +68,23 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		err = WithSegment("mqtt", c, func() error {
 			beforeMqttTime = time.Now()
-			// Bringing back the MQTT client due to issues with HTTP layer in the broker
-			if retained {
-				err = app.MqttClient.SendRetainedMessage(c.Request().Context(), topic, string(b))
-			} else {
-				err = app.MqttClient.SendMessage(c.Request().Context(), topic, string(b))
-			}
+			httpError := app.HttpClient.SendMessage(
+				c.Request().Context(), topic, string(b), retained,
+			)
 			afterMqttTime = time.Now()
-			return err
+			return httpError
 		})
 
+		status := 200
+		if err != nil {
+			status = 500
+			if e, ok := err.(*httpclient.HTTPError); ok {
+				status = e.StatusCode
+			}
+		}
 		tags := []string{
 			fmt.Sprintf("error:%t", err != nil),
+			fmt.Sprintf("status:%d", status),
 			fmt.Sprintf("retained:%t", retained),
 		}
 		if source != "" {
