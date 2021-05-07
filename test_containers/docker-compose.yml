@@ -1,20 +1,19 @@
 version: '3.5'
 services:
   emqtt:
-    image: tfgco/emq-docker:v2.3-tfg-beta10
+    image: emqx/emqx:4.2.9
     environment:
-      - "EMQ_NAME=emq"
-      - "EMQ_NODE__COOKIE=ef16498f66804df1cc6172f6996d5492"
-      - "EMQ_WAIT_TIME=60"
-      - "EMQ_LISTENER__API__MGMT=0.0.0.0:8080"
+      - "EMQX_NAME=emqx"
+      - "EMQX_NODE__COOKIE=ef16498f66804df1cc6172f6996d5492"
+      - "EMQX_WAIT_TIME=60"
     restart: always
     ports:
       - "1883:1883"
-      - "8080:8080"
+      - "8081:8081"
       - "18083:18083"
 
     healthcheck:
-      test: "nc -z 0.0.0.0 8080"
+      test: "nc -z 0.0.0.0 8081"
       interval: 30s
       timeout: 30s
       retries: 3
