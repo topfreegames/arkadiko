@@ -96,3 +96,6 @@ bench: kill-containers run-containers run-bg
 
 bench-run:
 	@go test -benchmem -bench . -benchtime 5s ./bench/...
+
+mock-lib:
+	@mockgen github.com/topfreegames/arkadiko/lib ArkadikoInterface | sed 's/mock_lib/mocks/' > lib/mocks/arkadiko.go
