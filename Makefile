@@ -28,7 +28,7 @@ kill-containers:
 
 test: run-tests
 
-run-tests: kill-containers run-containers
+run-tests:
 	@make run-test coverage
 	@make kill-containers
 
