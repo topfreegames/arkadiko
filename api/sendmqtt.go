@@ -63,6 +63,13 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 		workingString := fmt.Sprintf(`{"topic": "%s", "retained": %t, "payload": %v}`, topic, retained, string(b))
 
+		lg = lg.WithFields(log.Fields{
+			"topic":    topic,
+			"retained": retained,
+			"payload":  string(b),
+			"source":   source,
+		})
+
 		var mqttLatency time.Duration
 		var beforeMqttTime, afterMqttTime time.Time
 
@@ -77,6 +84,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		status := 200
 		if err != nil {
+			lg.WithError(err).Error("failed to send mqtt message")
 			status = 500
 			if e, ok := err.(*httpclient.HTTPError); ok {
 				status = e.StatusCode
