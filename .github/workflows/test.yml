@@ -24,7 +24,6 @@ jobs:
       - name: Run tests
         run: make test
       - name: Install goveralls
-        env:
         run: go get github.com/mattn/goveralls@v0.0.7
       - name: Send coverage
         env:
