@@ -38,6 +38,19 @@ var _ = Describe("Send to MQTT Handler", func() {
 				Expect(strings.TrimSpace(body)).To(Equal(strings.TrimSpace(response)))
 			})
 
+			It("Should respond with 200 and not override should_moderate", func() {
+				a := GetDefaultTestApp()
+				testJSON := map[string]interface{}{
+					"message":         "hello",
+					"should_moderate": true,
+				}
+				response := `{"topic": "test", "retained": false, "payload": {"message":"hello","should_moderate":true}}`
+				status, body := PostJSON(a, "/sendmqtt/test", testJSON)
+
+				Expect(status).To(Equal(http.StatusOK))
+				Expect(strings.TrimSpace(body)).To(Equal(strings.TrimSpace(response)))
+			})
+
 			It("Should respond with 200 for a valid message with hierarchical topic", func() {
 				a := GetDefaultTestApp()
 				testJSON := map[string]interface{}{
