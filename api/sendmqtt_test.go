@@ -31,7 +31,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				testJSON := map[string]interface{}{
 					"message": "hello",
 				}
-				response := `{"topic": "test", "retained": false, "payload": {"message":"hello", "should_moderate": false }}`
+				response := `{"topic": "test", "retained": false, "payload": {"message":"hello","should_moderate":false}}`
 				status, body := PostJSON(a, "/sendmqtt/test", testJSON)
 
 				Expect(status).To(Equal(http.StatusOK))
@@ -43,7 +43,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				testJSON := map[string]interface{}{
 					"message": "hello",
 				}
-				response := `{"topic": "test/topic", "retained": false, "payload": {"message":"hello", "should_moderate": false }}`
+				response := `{"topic": "test/topic", "retained": false, "payload": {"message":"hello","should_moderate":false}}`
 				url := "/sendmqtt/test/topic"
 				status, body := PostJSON(a, url, testJSON)
 
@@ -67,11 +67,11 @@ var _ = Describe("Send to MQTT Handler", func() {
 					"message": "hello",
 				}
 				topic := uuid.NewV4().String()
-				expectedMsg := `{"message":"hello"}`
+				expectedPayload := `{"message":"hello","should_moderate":false}`
 				response := fmt.Sprintf(
 					`{"topic": "%s", "retained": true, "payload": %s}`,
 					topic,
-					expectedMsg,
+					expectedPayload,
 				)
 				url := fmt.Sprintf("/sendmqtt/%s?retained=true", topic)
 				status, body := PostJSON(a, url, testJSON)
@@ -90,7 +90,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 
 				Expect(msg).NotTo(BeNil())
 				Expect(msg.Retained()).To(BeTrue())
-				Expect(string(msg.Payload())).To(Equal(expectedMsg))
+				Expect(string(msg.Payload())).To(Equal(expectedPayload))
 			})
 
 			It("Should respond with 200 for a valid message with hierarchical topic", func() {
@@ -98,7 +98,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				testJSON := map[string]interface{}{
 					"message": "hello",
 				}
-				response := `{"topic": "test/topic", "retained": true, "payload": {"message":"hello", "should_moderate": false }}`
+				response := `{"topic": "test/topic", "retained": true, "payload": {"message":"hello","should_moderate":false}}`
 				url := "/sendmqtt/test/topic?retained=true"
 				status, body := PostJSON(a, url, testJSON)
 
