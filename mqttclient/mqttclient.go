@@ -30,6 +30,7 @@ import (
 type MqttClient struct {
 	MqttServerHost string
 	MqttServerPort int
+	Timeout        time.Duration
 	ConfigPath     string
 	Config         *viper.Viper
 	Logger         log.FieldLogger
@@ -71,21 +72,29 @@ func (mc *MqttClient) SendRetainedMessage(ctx context.Context, topic string, mes
 }
 
 func (mc *MqttClient) publishMessage(ctx context.Context, topic string, message string, retained bool) error {
+	l := mc.Logger.WithFields(
+		log.Fields{
+			"method":   "publishMessage",
+			"topic":    topic,
+			"message":  message,
+			"retained": retained,
+		},
+	)
 	token := mc.MqttClient.WithContext(ctx).Publish(topic, 2, retained, message)
-	result := token.WaitTimeout(time.Second * 5)
+	result := token.WaitTimeout(mc.Timeout)
 
 	if result == false || token.Error() != nil {
 		err := token.Error()
 		if err == nil {
 			err = errors.New("timeoutError")
 		}
-		mc.Logger.WithError(err).Error()
+		l.WithError(err).Error("Error publishing message to mqtt")
 		return err
 	}
 	return nil
 }
 
-//WaitForConnection to mqtt server
+// WaitForConnection to mqtt server
 func (mc *MqttClient) WaitForConnection(timeout int) error {
 	start := time.Now()
 	timedOut := func() bool {
@@ -102,7 +111,7 @@ func (mc *MqttClient) WaitForConnection(timeout int) error {
 }
 
 func (mc *MqttClient) configure(l log.FieldLogger) {
-	mc.Logger = l
+	mc.Logger = l.WithField("source", "MqttClient")
 
 	mc.setConfigurationDefaults()
 	mc.loadConfiguration()
@@ -115,6 +124,7 @@ func (mc *MqttClient) setConfigurationDefaults() {
 	mc.Config.SetDefault("mqttserver.user", "admin")
 	mc.Config.SetDefault("mqttserver.pass", "admin")
 	mc.Config.SetDefault("mqttserver.ca_cert_file", "")
+	mc.Config.SetDefault("mqttserver.timeout", 5*time.Second)
 }
 
 func (mc *MqttClient) loadConfiguration() {
@@ -135,6 +145,7 @@ func (mc *MqttClient) loadConfiguration() {
 func (mc *MqttClient) configureClient() {
 	mc.MqttServerHost = mc.Config.GetString("mqttserver.host")
 	mc.MqttServerPort = mc.Config.GetInt("mqttserver.port")
+	mc.Timeout = mc.Config.GetDuration("mqttserver.timeout")
 }
 
 func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
