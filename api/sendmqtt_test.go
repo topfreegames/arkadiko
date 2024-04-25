@@ -30,7 +30,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				testJSON := map[string]interface{}{
 					"message": "hello",
 				}
-				response := `{"topic": "test", "retained": false, "payload": {"message":"hello"}}`
+				response := `{"topic": "test", "retained": false, "payload": {"message":"hello", "should_moderate": false }}`
 				status, body := PostJSON(a, "/sendmqtt/test", testJSON)
 
 				Expect(status).To(Equal(http.StatusOK))
@@ -42,7 +42,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				testJSON := map[string]interface{}{
 					"message": "hello",
 				}
-				response := `{"topic": "test/topic", "retained": false, "payload": {"message":"hello"}}`
+				response := `{"topic": "test/topic", "retained": false, "payload": {"message":"hello", "should_moderate": false }}`
 				url := "/sendmqtt/test/topic"
 				status, body := PostJSON(a, url, testJSON)
 
@@ -97,7 +97,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				testJSON := map[string]interface{}{
 					"message": "hello",
 				}
-				response := `{"topic": "test/topic", "retained": true, "payload": {"message":"hello"}}`
+				response := `{"topic": "test/topic", "retained": true, "payload": {"message":"hello", "should_moderate": false }}`
 				url := "/sendmqtt/test/topic?retained=true"
 				status, body := PostJSON(a, url, testJSON)
 
