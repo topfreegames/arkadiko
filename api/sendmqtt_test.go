@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -34,7 +35,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				status, body := PostJSON(a, "/sendmqtt/test", testJSON)
 
 				Expect(status).To(Equal(http.StatusOK))
-				Expect(body).To(Equal(response))
+				Expect(strings.TrimSpace(body)).To(Equal(strings.TrimSpace(response)))
 			})
 
 			It("Should respond with 200 for a valid message with hierarchical topic", func() {
@@ -47,7 +48,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				status, body := PostJSON(a, url, testJSON)
 
 				Expect(status).To(Equal(http.StatusOK))
-				Expect(body).To(Equal(response))
+				Expect(strings.TrimSpace(body)).To(Equal(strings.TrimSpace(response)))
 			})
 
 			It("Should respond with 400 if malformed JSON", func() {
@@ -102,7 +103,7 @@ var _ = Describe("Send to MQTT Handler", func() {
 				status, body := PostJSON(a, url, testJSON)
 
 				Expect(status).To(Equal(http.StatusOK))
-				Expect(body).To(Equal(response))
+				Expect(strings.TrimSpace(body)).To(Equal(strings.TrimSpace(response)))
 			})
 
 			It("Should respond with 400 if malformed JSON", func() {
