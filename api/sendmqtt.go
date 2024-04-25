@@ -51,6 +51,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
+		// Default should_moderate to false so messages sent from the server side are not moderated
 		if _, exists := msgPayload["should_moderate"]; !exists {
 			msgPayload["should_moderate"] = false
 		}
@@ -74,17 +75,12 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		})
 
 		var mqttLatency time.Duration
-		var beforeMqttTime, afterMqttTime time.Time
+		var beforeMqttTime time.Time
 
 		err = WithSegment("mqtt", c, func() error {
 			beforeMqttTime = time.Now()
-			var sendMqttErr error
-			if retained {
-				sendMqttErr = app.MqttClient.SendRetainedMessage(c.Request().Context(), topic, string(b))
-			} else {
-				sendMqttErr = app.MqttClient.SendMessage(c.Request().Context(), topic, string(b))
-			}
-			afterMqttTime = time.Now()
+			sendMqttErr := app.MqttClient.PublishMessage(c.Request().Context(), topic, string(b), retained)
+			mqttLatency = time.Now().Sub(beforeMqttTime)
 
 			return sendMqttErr
 		})
@@ -96,7 +92,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		if source != "" {
 			tags = append(tags, fmt.Sprintf("requestor:%s", source))
 		}
-		mqttLatency = afterMqttTime.Sub(beforeMqttTime)
+
 		app.DDStatsD.Timing("mqtt_latency", mqttLatency, tags...)
 		lg = lg.WithField("mqttLatency", mqttLatency.Nanoseconds())
 		lg.Debug("sent mqtt message")
@@ -105,6 +101,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		c.Set("retained", retained)
 
 		if err != nil {
+			lg.WithError(err).Error("failed to send mqtt message")
 			return FailWith(500, err.Error(), c)
 		}
 		return c.String(http.StatusOK, workingString)

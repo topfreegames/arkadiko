@@ -63,18 +63,18 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l 
 
 // SendMessage sends the message with the given payload to topic
 func (mc *MqttClient) SendMessage(ctx context.Context, topic string, message string) error {
-	return mc.publishMessage(ctx, topic, message, false)
+	return mc.PublishMessage(ctx, topic, message, false)
 }
 
 // SendRetainedMessage sends the message with the given payload to topic
 func (mc *MqttClient) SendRetainedMessage(ctx context.Context, topic string, message string) error {
-	return mc.publishMessage(ctx, topic, message, true)
+	return mc.PublishMessage(ctx, topic, message, true)
 }
 
-func (mc *MqttClient) publishMessage(ctx context.Context, topic string, message string, retained bool) error {
+func (mc *MqttClient) PublishMessage(ctx context.Context, topic string, message string, retained bool) error {
 	l := mc.Logger.WithFields(
 		log.Fields{
-			"method":   "publishMessage",
+			"method":   "PublishMessage",
 			"topic":    topic,
 			"message":  message,
 			"retained": retained,
