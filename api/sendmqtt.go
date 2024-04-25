@@ -52,6 +52,10 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 			return FailWith(400, err.Error(), c)
 		}
 
+		if _, exists := msgPayload["should_moderate"]; !exists {
+			msgPayload["should_moderate"] = false
+		}
+
 		topic := c.ParamValues()[0]
 		if err != nil {
 			return FailWith(400, err.Error(), c)
