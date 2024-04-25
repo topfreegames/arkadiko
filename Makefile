@@ -33,7 +33,7 @@ run-tests: kill-containers run-containers
 	@make kill-containers
 
 run-test unit:
-	@go run github.com/onsi/ginkgo/ginkgo@v1.14.2 -r --cover .
+	@go run github.com/onsi/ginkgo/ginkgo -r --cover .
 
 test-coverage-run:
 	@mkdir -p _build
