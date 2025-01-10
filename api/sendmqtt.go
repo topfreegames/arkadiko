@@ -24,8 +24,9 @@ var sendMqttLatencyMetric *prometheus.HistogramVec
 
 func init() {
 	sendMqttLatencyMetric = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "send_mqtt_latency",
-		Help: "The latency of sending a message to mqtt",
+		Namespace: "arkadiko",
+		Name:      "send_mqtt_latency",
+		Help:      "The latency of sending a message to mqtt",
 	},
 		[]string{"error", "retained"},
 	)

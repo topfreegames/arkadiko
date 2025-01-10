@@ -80,25 +80,25 @@ func (s *SentryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 
 // ResponseTimeMetricsMiddleware struct encapsulating DDStatsD
 type ResponseTimeMetricsMiddleware struct {
-	DDStatsD      MetricsReporter
-	latencyMetric *prometheus.HistogramVec
+	DDStatsD MetricsReporter
+}
+
+var latencyMetric *prometheus.HistogramVec
+
+func init() {
+	latencyMetric = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "arkadiko",
+		Name:      "response_time",
+		Help:      "",
+	},
+		[]string{"route", "method", "status"},
+	)
 }
 
 // ResponseTimeMetricsMiddleware returns a new ResponseTimeMetricsMiddleware
 func NewResponseTimeMetricsMiddleware(ddStatsD MetricsReporter) *ResponseTimeMetricsMiddleware {
-	metric := promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace:   "arkadiko",
-		Name:        "response_time",
-		Help:        "",
-		ConstLabels: nil,
-		Buckets:     nil,
-	},
-		[]string{"route", "method", "status"},
-	)
-
 	return &ResponseTimeMetricsMiddleware{
-		DDStatsD:      ddStatsD,
-		latencyMetric: metric,
+		DDStatsD: ddStatsD,
 	}
 }
 
@@ -122,7 +122,7 @@ func (responseTimeMiddleware ResponseTimeMetricsMiddleware) Serve(next echo.Hand
 
 		// Keeping both for retro compatibility in the short term
 		responseTimeMiddleware.DDStatsD.Timing(responseTimeMillisecondsMetricName, timeUsed, tags...)
-		responseTimeMiddleware.latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status)).Observe(timeUsed.Seconds())
+		latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status)).Observe(timeUsed.Seconds())
 
 		return result
 	}
