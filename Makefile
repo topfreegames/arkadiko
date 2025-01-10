@@ -20,11 +20,11 @@ run:
 	@go run main.go start --rpc --rpc-port=52345 -d
 
 run-containers:
-	@cd test_containers && docker-compose up -d && cd ..
+	@cd test_containers && docker compose up -d && cd ..
 	@/bin/bash -c "until curl -s localhost:8081 > /dev/null; do echo 'Waiting for EMQTT...' && sleep 1; done"
 
 kill-containers:
-	@cd test_containers && docker-compose stop && cd ..
+	@cd test_containers && docker compose stop && cd ..
 
 test: run-tests
 
