@@ -23,3 +23,4 @@ httpserver:
   url: "http://localhost:8081"
   user: admin
   pass: public
+  metricsPort: 9090

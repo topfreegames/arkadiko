@@ -9,6 +9,9 @@ package api
 
 import (
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -165,6 +168,7 @@ func (app *App) configureJaeger() {
 
 func (app *App) setConfigurationDefaults() {
 	app.Config.SetDefault("healthcheck.workingText", "WORKING")
+	app.Config.SetDefault("httpserver.metricsServer", 9090)
 }
 
 func (app *App) loadConfiguration() error {
@@ -184,7 +188,7 @@ func (app *App) loadConfiguration() error {
 	return nil
 }
 
-//OnErrorHandler handles panics
+// OnErrorHandler handles panics
 func (app *App) OnErrorHandler(err error, stack []byte) {
 	app.Logger.WithError(err).Error("Panic occurred.")
 
@@ -259,15 +263,31 @@ func (app *App) Start() error {
 		"operation": "Start",
 	})
 
+	// start metrics server
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{}))
+	metricsServer := &http.Server{
+		Addr:    fmt.Sprintf(":%d", app.Config.GetInt("httpserver.metricsServer")),
+		Handler: mux,
+	}
+
+	go func() {
+		err := metricsServer.ListenAndServe()
+		if err != nil {
+			l.WithError(err).Error("Failed to start metrics server.")
+		}
+	}()
+
 	l.WithFields(log.Fields{
 		"host": app.Host,
 		"port": app.Port,
-	}).Info("App started.")
+	}).Infof("App starting on %s:%d", app.Host, app.Port)
 
 	err := app.App.Start(fmt.Sprintf("%s:%d", app.Host, app.Port))
 	if err != nil {
 		l.WithError(err).Error("App failed to start.")
 		return err
 	}
+
 	return nil
 }
