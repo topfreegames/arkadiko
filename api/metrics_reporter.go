@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -98,17 +99,24 @@ type Metrics struct {
 	MQTTLatency *prometheus.HistogramVec
 }
 
+var metricsOnce sync.Once
+var metricsSingleton *Metrics
+
 func NewMetrics() *Metrics {
-	return &Metrics{
-		APILatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: "arkadiko",
-			Name:      "api_latency",
-			Help:      "API latency",
-		}, []string{"route", "method", "status"}),
-		MQTTLatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: "arkadiko",
-			Name:      "mqtt_latency",
-			Help:      "MQTT latency",
-		}, []string{"error", "retained"}),
-	}
+	metricsOnce.Do(func() {
+		metricsSingleton = &Metrics{
+			APILatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
+				Namespace: "arkadiko",
+				Name:      "api_latency",
+				Help:      "API latency",
+			}, []string{"route", "method", "status"}),
+			MQTTLatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
+				Namespace: "arkadiko",
+				Name:      "mqtt_latency",
+				Help:      "MQTT latency",
+			}, []string{"error", "retained"}),
+		}
+	})
+
+	return metricsSingleton
 }
