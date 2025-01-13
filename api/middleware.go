@@ -10,10 +10,10 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"runtime/debug"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/labstack/echo"
@@ -80,25 +80,19 @@ func (s *SentryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 
 // ResponseTimeMetricsMiddleware struct encapsulating DDStatsD
 type ResponseTimeMetricsMiddleware struct {
-	DDStatsD MetricsReporter
-}
-
-var latencyMetric *prometheus.HistogramVec
-
-func init() {
-	latencyMetric = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "arkadiko",
-		Name:      "response_time",
-		Help:      "",
-	},
-		[]string{"route", "method", "status"},
-	)
+	DDStatsD      MetricsReporter
+	latencyMetric *prometheus.HistogramVec
 }
 
 // ResponseTimeMetricsMiddleware returns a new ResponseTimeMetricsMiddleware
-func NewResponseTimeMetricsMiddleware(ddStatsD MetricsReporter) *ResponseTimeMetricsMiddleware {
+func NewResponseTimeMetricsMiddleware(
+	ddStatsD MetricsReporter,
+	latencyMetric *prometheus.HistogramVec,
+) *ResponseTimeMetricsMiddleware {
+
 	return &ResponseTimeMetricsMiddleware{
-		DDStatsD: ddStatsD,
+		DDStatsD:      ddStatsD,
+		latencyMetric: latencyMetric,
 	}
 }
 
@@ -122,7 +116,7 @@ func (responseTimeMiddleware ResponseTimeMetricsMiddleware) Serve(next echo.Hand
 
 		// Keeping both for retro compatibility in the short term
 		responseTimeMiddleware.DDStatsD.Timing(responseTimeMillisecondsMetricName, timeUsed, tags...)
-		latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status)).Observe(timeUsed.Seconds())
+		responseTimeMiddleware.latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status)).Observe(timeUsed.Seconds())
 
 		return result
 	}

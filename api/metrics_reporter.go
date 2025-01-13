@@ -3,8 +3,11 @@ package api
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/extensions/dogstatsd"
 )
@@ -89,4 +92,31 @@ func (d *DogStatsD) Gauge(
 func (d *DogStatsD) Increment(metric string, tags ...string) error {
 	prefixTags(d.tagsPrefix, tags...)
 	return d.client.Incr(metric, tags, d.rate)
+}
+
+type Metrics struct {
+	APILatency  *prometheus.HistogramVec
+	MQTTLatency *prometheus.HistogramVec
+}
+
+var metricsOnce sync.Once
+var metricsSingleton *Metrics
+
+func NewMetrics() *Metrics {
+	metricsOnce.Do(func() {
+		metricsSingleton = &Metrics{
+			APILatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
+				Namespace: "arkadiko",
+				Name:      "response_time",
+				Help:      "API response time",
+			}, []string{"route", "method", "status"}),
+			MQTTLatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
+				Namespace: "arkadiko",
+				Name:      "mqtt_latency",
+				Help:      "MQTT latency",
+			}, []string{"error", "retained"}),
+		}
+	})
+
+	return metricsSingleton
 }

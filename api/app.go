@@ -9,12 +9,13 @@ package api
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/labstack/echo"
@@ -47,6 +48,7 @@ type App struct {
 	HttpClient *httpclient.HttpClient
 	NewRelic   newrelic.Application
 	DDStatsD   *DogStatsD
+	Metrics    *Metrics
 }
 
 // GetApp returns a new arkadiko API Application
@@ -222,10 +224,12 @@ func (app *App) configureApplication() error {
 
 	}
 
+	app.Metrics = NewMetrics()
+
 	a.Pre(middleware.RemoveTrailingSlash())
 	a.Use(NewLoggerMiddleware(app.Logger).Serve)
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
-	a.Use(NewResponseTimeMetricsMiddleware(app.DDStatsD).Serve)
+	a.Use(NewResponseTimeMetricsMiddleware(app.DDStatsD, app.Metrics.APILatency).Serve)
 	a.Use(NewVersionMiddleware().Serve)
 	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
