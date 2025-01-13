@@ -107,8 +107,8 @@ func NewMetrics() *Metrics {
 		metricsSingleton = &Metrics{
 			APILatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
 				Namespace: "arkadiko",
-				Name:      "api_latency",
-				Help:      "API latency",
+				Name:      "response_time",
+				Help:      "API response time",
 			}, []string{"route", "method", "status"}),
 			MQTTLatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
 				Namespace: "arkadiko",
