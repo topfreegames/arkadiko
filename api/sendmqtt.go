@@ -10,8 +10,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -19,18 +17,6 @@ import (
 	"github.com/labstack/echo"
 	log "github.com/sirupsen/logrus"
 )
-
-var sendMqttLatencyMetric *prometheus.HistogramVec
-
-func init() {
-	sendMqttLatencyMetric = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "arkadiko",
-		Name:      "send_mqtt_latency",
-		Help:      "The latency of sending a message to mqtt",
-	},
-		[]string{"error", "retained"},
-	)
-}
 
 // SendMqttHandler is the handler responsible for sending messages to mqtt
 func SendMqttHandler(app *App) func(c echo.Context) error {
@@ -108,7 +94,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 
 		app.DDStatsD.Timing("mqtt_latency", mqttLatency, tags...)
-		sendMqttLatencyMetric.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained)).Observe(mqttLatency.Seconds())
+		app.Metrics.MQTTLatency.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained)).Observe(mqttLatency.Seconds())
 		lg = lg.WithField("mqttLatency", mqttLatency.Nanoseconds())
 		lg.Debug("sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
