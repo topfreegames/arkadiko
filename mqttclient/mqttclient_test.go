@@ -10,7 +10,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/eclipse/paho.mqtt.golang"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -34,7 +34,7 @@ var _ = Describe("MQTT Client", func() {
 				var onConnectHandler = func(client mqtt.Client) {
 					connected = true
 				}
-				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
+				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, nil, nil, logger)
 
 				Expect(mc.ConfigPath).To(Equal("../config/test.yml"))
 
@@ -48,7 +48,7 @@ var _ = Describe("MQTT Client", func() {
 			})
 
 			It("It should send retained message", func() {
-				mc := mqttclient.GetMqttClient("../config/test.yml", nil, logger)
+				mc := mqttclient.GetMqttClient("../config/test.yml", nil, nil, nil, logger)
 
 				Expect(mc.ConfigPath).To(Equal("../config/test.yml"))
 
@@ -81,7 +81,7 @@ var _ = Describe("MQTT Client", func() {
 		Describe("Perf", func() {
 			Measure("it should send message", func(b Benchmarker) {
 				var onConnectHandler = func(client mqtt.Client) {}
-				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
+				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, nil, nil, logger)
 
 				runtime := b.Time("runtime", func() {
 					err := mc.SendMessage(ctx, "test", `{"message": "hello"}`)
