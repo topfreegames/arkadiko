@@ -23,7 +23,7 @@ import (
 	context "golang.org/x/net/context"
 )
 
-//Server represents the server that replies to RPC messages
+// Server represents the server that replies to RPC messages
 type Server struct {
 	Debug      bool
 	Port       int
@@ -36,7 +36,7 @@ type Server struct {
 	grpcServer *grpc.Server
 }
 
-//NewServer returns a new RPC Server
+// NewServer returns a new RPC Server
 func NewServer(host string, port int, configPath string, debug bool, logger log.FieldLogger) (*Server, error) {
 	server := &Server{
 		Host:       host,
@@ -74,7 +74,7 @@ func (s *Server) configure() error {
 	defaultLogger := s.Logger.WithFields(log.Fields{})
 
 	defaultLogger.Debug("Connecting to mqtt...")
-	s.MqttClient = mqttclient.GetMqttClient(s.ConfigPath, nil, defaultLogger)
+	s.MqttClient = mqttclient.GetMqttClient(s.ConfigPath, nil, nil, nil, defaultLogger)
 	defaultLogger.Info("Connected to mqtt successfully.")
 
 	return nil
@@ -136,7 +136,7 @@ func (s *Server) loadConfiguration() error {
 	return nil
 }
 
-//OnErrorHandler handles panics
+// OnErrorHandler handles panics
 func (s *Server) OnErrorHandler(err error, stack []byte) {
 	s.Logger.WithError(err).Error("Panic occurred.")
 
@@ -192,7 +192,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-//SendMessage to MQTT Server
+// SendMessage to MQTT Server
 func (s *Server) SendMessage(ctx context.Context, message *Message) (*SendMessageResult, error) {
 	l := s.Logger.WithFields(log.Fields{
 		"source":    "rpc",

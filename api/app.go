@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -244,7 +245,11 @@ func (app *App) configureApplication() error {
 	app.Errors = metrics.NewEWMA15()
 
 	l.Debug("Connecting to mqtt...")
-	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil, l)
+	onConnectionLost := func(client mqtt.Client, err error) {
+		l.WithError(err).Error("Connection to MQTT server lost")
+		app.Metrics.DisconnectionCounter.WithLabelValues(err.Error()).Inc()
+	}
+	app.MqttClient = mqttclient.GetMqttClient(app.ConfigPath, nil, onConnectionLost, nil, l)
 	l.Info("Connected to mqtt successfully.")
 
 	app.HttpClient = httpclient.GetHttpClient(app.ConfigPath, l)

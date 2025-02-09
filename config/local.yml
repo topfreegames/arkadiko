@@ -7,6 +7,7 @@ mqttserver:
   pass: password
   usetls: false
   insecure_tls: true
+  timeout: 500ms
 newrelic:
   key: ""
 sentry:

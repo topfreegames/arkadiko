@@ -10,10 +10,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/eclipse/paho.mqtt.golang"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/topfreegames/arkadiko/httpclient"
@@ -49,7 +49,7 @@ var _ = Describe("HTTP Client", func() {
 				err := hc.SendMessage(nil, topic, expectedMsg, true)
 				Expect(err).NotTo(HaveOccurred())
 
-				mc := mqttclient.GetMqttClient("../config/test.yml", nil, logger)
+				mc := mqttclient.GetMqttClient("../config/test.yml", nil, nil, nil, logger)
 				var msg mqtt.Message
 				var onMessageHandler = func(client mqtt.Client, message mqtt.Message) {
 					msg = message
@@ -68,7 +68,7 @@ var _ = Describe("HTTP Client", func() {
 		Describe("Perf", func() {
 			Measure("it should send message", func(b Benchmarker) {
 				var onConnectHandler = func(client mqtt.Client) {}
-				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, logger)
+				mc := mqttclient.GetMqttClient("../config/test.yml", onConnectHandler, nil, nil, logger)
 
 				runtime := b.Time("runtime", func() {
 					err := mc.SendMessage(ctx, "test", `{"message": "hello"}`)

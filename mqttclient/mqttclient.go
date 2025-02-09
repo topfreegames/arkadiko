@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -21,8 +20,8 @@ import (
 	emqtt "github.com/topfreegames/extensions/mqtt"
 	"github.com/topfreegames/extensions/mqtt/interfaces"
 
-	"github.com/eclipse/paho.mqtt.golang"
-	"github.com/satori/go.uuid"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 )
 
@@ -35,19 +34,42 @@ type MqttClient struct {
 	Config         *viper.Viper
 	Logger         log.FieldLogger
 	MqttClient     interfaces.Client
+	maxRetries     int
 }
 
 var client *MqttClient
 var once sync.Once
 
 // GetMqttClient creates the mqttclient and returns it
-func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l log.FieldLogger) *MqttClient {
+func GetMqttClient(
+	configPath string,
+	onConnectHandler mqtt.OnConnectHandler,
+	onConnectionLost mqtt.ConnectionLostHandler,
+	onReconnecting mqtt.ReconnectHandler,
+	l log.FieldLogger,
+) *MqttClient {
 	defaultOnConnectHandler := func(client mqtt.Client) {
 		l.Info("Connected to MQTT server")
 	}
 
+	defaultOnConnectionLostHandler := func(client mqtt.Client, err error) {
+		l.WithError(err).Error("Connection to MQTT server lost")
+	}
+
+	defaultOnReconnectingHandler := func(client mqtt.Client, options *mqtt.ClientOptions) {
+		l.Info("Reconnecting to MQTT server")
+	}
+
 	if onConnectHandler == nil {
 		onConnectHandler = defaultOnConnectHandler
+	}
+
+	if onConnectionLost == nil {
+		onConnectionLost = defaultOnConnectionLostHandler
+	}
+
+	if onReconnecting == nil {
+		onReconnecting = defaultOnReconnectingHandler
 	}
 
 	once.Do(func() {
@@ -56,7 +78,7 @@ func GetMqttClient(configPath string, onConnectHandler mqtt.OnConnectHandler, l 
 			Config:     viper.New(),
 		}
 		client.configure(l)
-		client.start(onConnectHandler)
+		client.start(onConnectHandler, onConnectionLost, onReconnecting)
 	})
 	return client
 }
@@ -80,17 +102,26 @@ func (mc *MqttClient) PublishMessage(ctx context.Context, topic string, message 
 			"retained": retained,
 		},
 	)
-	token := mc.MqttClient.WithContext(ctx).Publish(topic, 2, retained, message)
-	result := token.WaitTimeout(mc.Timeout)
 
-	if result == false || token.Error() != nil {
-		err := token.Error()
-		if err == nil {
-			err = errors.New("timeoutError")
+	l.Debug("Publishing message to mqtt")
+
+	for i := 0; i < 3; i++ { // Retry up to 3 times
+		token := mc.MqttClient.WithContext(ctx).Publish(topic, 2, retained, message)
+		if token.WaitTimeout(mc.Timeout) {
+			l.Debug("message published to mqtt")
+			break
 		}
-		l.WithError(err).Error("Error publishing message to mqtt")
-		return err
+
+		if token.Error() != nil {
+			l.WithError(token.Error()).Error("Error publishing message to mqtt")
+		} else {
+			l.Debug("message timed out")
+			return nil
+		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
+
 	return nil
 }
 
@@ -124,7 +155,7 @@ func (mc *MqttClient) setConfigurationDefaults() {
 	mc.Config.SetDefault("mqttserver.user", "admin")
 	mc.Config.SetDefault("mqttserver.pass", "admin")
 	mc.Config.SetDefault("mqttserver.ca_cert_file", "")
-	mc.Config.SetDefault("mqttserver.timeout", 5*time.Second)
+	mc.Config.SetDefault("mqttserver.timeout", 500*time.Millisecond)
 }
 
 func (mc *MqttClient) loadConfiguration() {
@@ -148,7 +179,7 @@ func (mc *MqttClient) configureClient() {
 	mc.Timeout = mc.Config.GetDuration("mqttserver.timeout")
 }
 
-func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
+func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler, onConnectionLost mqtt.ConnectionLostHandler, onReconnecting mqtt.ReconnectHandler) {
 	mc.Logger.WithFields(log.Fields{
 		"host":         mc.MqttServerHost,
 		"port":         mc.MqttServerPort,
@@ -188,6 +219,8 @@ func (mc *MqttClient) start(onConnectHandler mqtt.OnConnectHandler) {
 	opts.SetMaxReconnectInterval(30 * time.Second)
 	opts.SetOnConnectHandler(onConnectHandler)
 	opts.SetAutoReconnect(true)
+	opts.SetConnectionLostHandler(onConnectionLost)
+	opts.SetReconnectingHandler(onReconnecting)
 
 	c := emqtt.NewClient(opts)
 	mc.MqttClient = c

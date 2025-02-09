@@ -95,8 +95,9 @@ func (d *DogStatsD) Increment(metric string, tags ...string) error {
 }
 
 type Metrics struct {
-	APILatency  *prometheus.HistogramVec
-	MQTTLatency *prometheus.HistogramVec
+	APILatency           *prometheus.HistogramVec
+	MQTTLatency          *prometheus.HistogramVec
+	DisconnectionCounter *prometheus.CounterVec
 }
 
 var metricsOnce sync.Once
@@ -115,6 +116,11 @@ func NewMetrics() *Metrics {
 				Name:      "mqtt_latency",
 				Help:      "MQTT latency",
 			}, []string{"error", "retained"}),
+			DisconnectionCounter: promauto.NewCounterVec(prometheus.CounterOpts{
+				Namespace: "arkadiko",
+				Name:      "mqtt_disconnections",
+				Help:      "MQTT disconnections",
+			}, []string{"error"}),
 		}
 	})
 
