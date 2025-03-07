@@ -10,7 +10,7 @@ package api
 import (
 	"fmt"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	newrelic "github.com/newrelic/go-agent"
 )
 
@@ -30,7 +30,7 @@ func SucceedWith(payload map[string]interface{}, c echo.Context) error {
 	return c.JSON(200, payload)
 }
 
-//GetTX returns new relic transaction
+// GetTX returns new relic transaction
 func GetTX(c echo.Context) newrelic.Transaction {
 	tx := c.Get("txn")
 	if tx == nil {
@@ -40,7 +40,7 @@ func GetTX(c echo.Context) newrelic.Transaction {
 	return tx.(newrelic.Transaction)
 }
 
-//WithSegment adds a segment to new relic transaction
+// WithSegment adds a segment to new relic transaction
 func WithSegment(name string, c echo.Context, f func() error) error {
 	tx := GetTX(c)
 	if tx == nil {

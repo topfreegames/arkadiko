@@ -8,7 +8,7 @@
 package echo
 
 import (
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 // Echo is the top-level framework instance.
