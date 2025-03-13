@@ -3,12 +3,12 @@ package otel
 import (
 	"context"
 	"fmt"
-	"os"
-
 	jaegerpropagation "go.opentelemetry.io/contrib/propagators/jaeger"
+	"log"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdk "go.opentelemetry.io/otel/sdk/trace"
@@ -18,13 +18,15 @@ import (
 type Closer func(context.Context) error
 
 func NewTracer(disabled bool) (Closer, error) {
-	if disabled {
+	if false {
 		return func(context.Context) error { return nil }, nil
 	}
 
-	exporter, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(os.Getenv("JAEGER_AGENT_HOST"))))
+	client := otlptracegrpc.NewClient(otlptracegrpc.WithInsecure())
+
+	exporter, err := otlptrace.New(context.Background(), client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create jaeger exporter: %w", err)
+		log.Fatalf("Failed to create exporter: %v", err)
 	}
 
 	provider := sdk.NewTracerProvider(

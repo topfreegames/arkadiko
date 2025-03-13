@@ -7,3 +7,5 @@ bin/
 _build/
 .idea
 .vscode/launch.json
+docker-compose.yml
+otel-collector-config.yaml
