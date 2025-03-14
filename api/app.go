@@ -53,7 +53,7 @@ type App struct {
 	DDStatsD   *DogStatsD
 	Metrics    *Metrics
 	OtelCloser otel.Closer
-	ctx		   context.Context
+	ctx        context.Context
 }
 
 // GetApp returns a new arkadiko API Application
@@ -67,7 +67,7 @@ func GetApp(host string, port int, configPath string, debug bool, logger log.Fie
 		MqttClient: nil,
 		HttpClient: nil,
 		Logger:     logger,
-		ctx:		context.Background(),
+		ctx:        context.Background(),
 	}
 
 	err := app.Configure()
