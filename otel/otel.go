@@ -11,27 +11,27 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdk "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
 type Closer func(context.Context) error
 
-func NewTracer(disabled bool) (Closer, error) {
-	if false {
+func NewTracer(ctx context.Context, disabled bool) (Closer, error) {
+	if disabled {
 		return func(context.Context) error { return nil }, nil
 	}
 
 	client := otlptracegrpc.NewClient(otlptracegrpc.WithInsecure())
 
-	exporter, err := otlptrace.New(context.Background(), client)
+	exporter, err := otlptrace.New(ctx, client)
 	if err != nil {
 		log.Fatalf("Failed to create exporter: %v", err)
 	}
 
-	provider := sdk.NewTracerProvider(
-		sdk.WithBatcher(exporter),
-		sdk.WithResource(resource.NewWithAttributes(
+	provider := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceName("arkadiko"),
 		)),

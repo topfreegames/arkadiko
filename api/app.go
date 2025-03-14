@@ -10,6 +10,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -52,6 +53,7 @@ type App struct {
 	DDStatsD   *DogStatsD
 	Metrics    *Metrics
 	OtelCloser otel.Closer
+	ctx		   context.Context
 }
 
 // GetApp returns a new arkadiko API Application
@@ -65,7 +67,9 @@ func GetApp(host string, port int, configPath string, debug bool, logger log.Fie
 		MqttClient: nil,
 		HttpClient: nil,
 		Logger:     logger,
+		ctx:		context.Background(),
 	}
+
 	err := app.Configure()
 	if err != nil {
 		return nil, err
@@ -159,9 +163,9 @@ func (app *App) configureOtel() {
 		"operation": "configureOtel",
 	})
 
-	closer, err := otel.NewTracer(app.Config.GetBool("jaeger.disabled"))
+	closer, err := otel.NewTracer(app.ctx, app.Config.GetBool("jaeger.disabled"))
 	if err != nil {
-		l.Error("Failed to initialize Open Telemetry Closer.")
+		l.Error("Failed to initialize Open Telemetry.")
 	}
 
 	app.OtelCloser = closer
@@ -290,8 +294,11 @@ func (app *App) Start() error {
 		"port": app.Port,
 	}).Infof("App starting on %s:%d", app.Host, app.Port)
 
-	ctx := context.Background()
-	shutdown, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	app.App.Server.BaseContext = func(net.Listener) context.Context {
+		return app.ctx
+	}
+
+	shutdown, cancel := signal.NotifyContext(app.ctx, os.Interrupt)
 	defer cancel()
 
 	go func() {
@@ -303,10 +310,10 @@ func (app *App) Start() error {
 
 	<-shutdown.Done()
 
-	err := app.App.Shutdown(ctx)
+	err := app.App.Shutdown(app.ctx)
 	if err != nil {
 		l.WithError(err).Error("App failed to stop.")
 	}
 
-	return app.OtelCloser(ctx)
+	return app.OtelCloser(app.ctx)
 }
