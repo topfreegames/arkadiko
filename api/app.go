@@ -8,28 +8,30 @@
 package api
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	raven "github.com/getsentry/raven-go"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	newrelic "github.com/newrelic/go-agent"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
-	raven "github.com/getsentry/raven-go"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
-	newrelic "github.com/newrelic/go-agent"
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	"github.com/topfreegames/arkadiko/httpclient"
-	jecho "github.com/topfreegames/arkadiko/jaeger/echo"
 	"github.com/topfreegames/arkadiko/mqttclient"
-	"github.com/topfreegames/extensions/jaeger"
+	"github.com/topfreegames/arkadiko/otel"
+	jecho "github.com/topfreegames/arkadiko/otel/echo"
 )
 
 // JSON type
@@ -50,6 +52,8 @@ type App struct {
 	NewRelic   newrelic.Application
 	DDStatsD   *DogStatsD
 	Metrics    *Metrics
+	OtelCloser otel.Closer
+	ctx        context.Context
 }
 
 // GetApp returns a new arkadiko API Application
@@ -63,7 +67,9 @@ func GetApp(host string, port int, configPath string, debug bool, logger log.Fie
 		MqttClient: nil,
 		HttpClient: nil,
 		Logger:     logger,
+		ctx:        context.Background(),
 	}
+
 	err := app.Configure()
 	if err != nil {
 		return nil, err
@@ -89,7 +95,7 @@ func (app *App) Configure() error {
 		return err
 	}
 
-	app.configureJaeger()
+	app.configureOtel()
 
 	err = app.configureApplication()
 	if err != nil {
@@ -151,22 +157,18 @@ func (app *App) configureNewRelic() error {
 	return nil
 }
 
-func (app *App) configureJaeger() {
+func (app *App) configureOtel() {
 	l := app.Logger.WithFields(log.Fields{
 		"source":    "app",
-		"operation": "configureJaeger",
+		"operation": "configureOtel",
 	})
 
-	opts := jaeger.Options{
-		Disabled:    app.Config.GetBool("jaeger.disabled"),
-		Probability: app.Config.GetFloat64("jaeger.samplingProbability"),
-		ServiceName: "arkadiko",
+	closer, err := otel.NewTracer(app.ctx, app.Config.GetBool("jaeger.disabled"))
+	if err != nil {
+		l.Error("Failed to initialize Open Telemetry.")
 	}
 
-	_, err := jaeger.Configure(opts)
-	if err != nil {
-		l.Error("Failed to initialize Jaeger.")
-	}
+	app.OtelCloser = closer
 }
 
 func (app *App) setConfigurationDefaults() {
@@ -292,11 +294,26 @@ func (app *App) Start() error {
 		"port": app.Port,
 	}).Infof("App starting on %s:%d", app.Host, app.Port)
 
-	err := app.App.Start(fmt.Sprintf("%s:%d", app.Host, app.Port))
-	if err != nil {
-		l.WithError(err).Error("App failed to start.")
-		return err
+	app.App.Server.BaseContext = func(net.Listener) context.Context {
+		return app.ctx
 	}
 
-	return nil
+	shutdown, cancel := signal.NotifyContext(app.ctx, os.Interrupt)
+	defer cancel()
+
+	go func() {
+		err := app.App.Start(fmt.Sprintf("%s:%d", app.Host, app.Port))
+		if err != nil {
+			l.WithError(err).Error("App failed to start.")
+		}
+	}()
+
+	<-shutdown.Done()
+
+	err := app.App.Shutdown(app.ctx)
+	if err != nil {
+		l.WithError(err).Error("App failed to stop.")
+	}
+
+	return app.OtelCloser(app.ctx)
 }

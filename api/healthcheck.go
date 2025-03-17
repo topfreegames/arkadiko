@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 // HealthCheckHandler is the handler responsible for validating that the app is still up
