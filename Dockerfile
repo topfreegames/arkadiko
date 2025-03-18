@@ -4,7 +4,7 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-FROM golang:1.15-alpine AS build
+FROM golang:1.23-alpine AS build
 
 LABEL app=arkadiko
 LABEL builder=true
@@ -12,12 +12,10 @@ LABEL maintainer='TFG CO <backend@tfgco.com>'
 
 WORKDIR /src
 
-COPY vendor ./vendor
-
 COPY . .
 
 # Build a static binary.
-RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -a -installsuffix cgo -o arkadiko .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o arkadiko .
 
 # Verify if the binary is truly static.
 RUN ldd /src/arkadiko 2>&1 | grep -q 'Not a valid dynamic program'
