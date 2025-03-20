@@ -13,6 +13,7 @@ newrelic:
 sentry:
   url: ""
 jaeger:
+  serviceName: arkadiko
   disabled: true
   samplingProbability: 0.001
 dogstatsd:
