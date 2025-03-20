@@ -8,7 +8,6 @@
 package echo
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/labstack/echo/v4"
