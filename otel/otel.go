@@ -17,10 +17,7 @@ import (
 
 type Closer func(context.Context) error
 
-func NewTracer(ctx context.Context, disabled bool) (Closer, error) {
-	if disabled {
-		return func(context.Context) error { return nil }, nil
-	}
+func NewTracer(ctx context.Context) (Closer, error) {
 
 	client := otlptracegrpc.NewClient(otlptracegrpc.WithInsecure())
 

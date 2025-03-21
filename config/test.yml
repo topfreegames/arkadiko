@@ -6,6 +6,7 @@ mqttserver:
   usetls: false
   insecure_tls: true
 jaeger:
+  serviceName: arkadiko
   disabled: false
   samplingProbability: 1.0
 dogstatsd:

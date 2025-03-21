@@ -27,11 +27,11 @@ import (
 	"github.com/rcrowley/go-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 
 	"github.com/topfreegames/arkadiko/httpclient"
 	"github.com/topfreegames/arkadiko/mqttclient"
 	"github.com/topfreegames/arkadiko/otel"
-	jecho "github.com/topfreegames/arkadiko/otel/echo"
 )
 
 // JSON type
@@ -44,7 +44,7 @@ type App struct {
 	Host       string
 	ConfigPath string
 	Errors     metrics.EWMA
-	App        *jecho.Echo
+	App        *echo.Echo
 	Config     *viper.Viper
 	Logger     log.FieldLogger
 	MqttClient *mqttclient.MqttClient
@@ -95,12 +95,12 @@ func (app *App) Configure() error {
 		return err
 	}
 
-	app.configureOtel()
-
 	err = app.configureApplication()
 	if err != nil {
 		return err
 	}
+
+	app.configureOtel()
 
 	return nil
 }
@@ -163,10 +163,21 @@ func (app *App) configureOtel() {
 		"operation": "configureOtel",
 	})
 
-	closer, err := otel.NewTracer(app.ctx, app.Config.GetBool("jaeger.disabled"))
+	if app.Config.GetBool("jaeger.disabled") {
+		app.OtelCloser = func(context.Context) error { return nil }
+		return
+	}
+
+	closer, err := otel.NewTracer(app.ctx)
 	if err != nil {
 		l.Error("Failed to initialize Open Telemetry.")
+		return
 	}
+
+	app.Config.SetDefault("jaeger.serviceName", "arkadiko")
+	app.App.Use(otelecho.Middleware(app.Config.GetString("jaeger.serviceName"), otelecho.WithSkipper(func(c echo.Context) bool {
+		return strings.Contains(c.Path(), "/healthcheck") 
+	})))
 
 	app.OtelCloser = closer
 }
@@ -209,7 +220,9 @@ func (app *App) configureApplication() error {
 		"operation": "configureApplication",
 	})
 
-	app.App = jecho.New()
+	app.App = echo.New()
+
+
 	a := app.App
 
 	_, w, _ := os.Pipe()
