@@ -95,12 +95,12 @@ func (app *App) Configure() error {
 		return err
 	}
 
-	app.configureOtel()
-
 	err = app.configureApplication()
 	if err != nil {
 		return err
 	}
+
+	app.configureOtel()
 
 	return nil
 }
@@ -171,6 +171,7 @@ func (app *App) configureOtel() {
 	closer, err := otel.NewTracer(app.ctx)
 	if err != nil {
 		l.Error("Failed to initialize Open Telemetry.")
+		return
 	}
 
 	app.Config.SetDefault("jaeger.serviceName", "arkadiko")
