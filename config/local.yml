@@ -12,10 +12,14 @@ newrelic:
   key: ""
 sentry:
   url: ""
-jaeger:
-  serviceName: arkadiko
-  disabled: true
-  samplingProbability: 0.001
+otel:
+  collector:
+    host: localhost
+    port: "4317"
+  service:
+    name: arkadiko
+  disabled: false
+  samplingProbability: 0.1
 dogstatsd:
   host: localhost:8125
   prefix: arkadiko.

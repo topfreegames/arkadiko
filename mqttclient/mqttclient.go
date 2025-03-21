@@ -23,6 +23,9 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // MqttClient contains the data needed to connect the client
@@ -94,6 +97,18 @@ func (mc *MqttClient) SendRetainedMessage(ctx context.Context, topic string, mes
 }
 
 func (mc *MqttClient) PublishMessage(ctx context.Context, topic string, message string, retained bool) error {
+	// Create a child span for the PublishMessage operation if a parent span exists in the context
+	var span trace.Span
+	ctx, span = trace.SpanFromContext(ctx).TracerProvider().Tracer("arkadiko").Start(ctx, "MqttClient.PublishMessage")
+	defer span.End()
+
+	// Add relevant attributes to the span
+	span.SetAttributes(
+		attribute.String("mqtt.topic", topic),
+		attribute.Bool("mqtt.retained", retained),
+		attribute.Int("mqtt.message_length", len(message)),
+	)
+
 	l := mc.Logger.WithFields(
 		log.Fields{
 			"method":   "PublishMessage",
@@ -106,16 +121,41 @@ func (mc *MqttClient) PublishMessage(ctx context.Context, topic string, message 
 	l.Debug("Publishing message to mqtt")
 
 	for i := 0; i < 3; i++ { // Retry up to 3 times
+		// Add a retry count attribute for better observability
+		if i > 0 {
+			span.SetAttributes(attribute.Int("mqtt.retry_count", i))
+			span.AddEvent("mqtt_retry_attempt", trace.WithAttributes(
+				attribute.Int("attempt", i+1),
+			))
+		}
+
+		startTime := time.Now()
 		token := mc.MqttClient.WithContext(ctx).Publish(topic, 2, retained, message)
+
 		if token.WaitTimeout(mc.Timeout) {
+			latency := time.Since(startTime)
+			span.SetAttributes(attribute.Int64("mqtt.publish_latency_ns", latency.Nanoseconds()))
+
+			// Check if there was an error
+			if token.Error() != nil {
+				span.RecordError(token.Error())
+				l.WithError(token.Error()).Error("Error publishing message to mqtt")
+				continue
+			}
+
+			span.AddEvent("mqtt_publish_success")
 			l.Debug("message published to mqtt")
+			span.SetStatus(codes.Ok, "")
 			break
 		}
 
 		if token.Error() != nil {
+			span.RecordError(token.Error())
 			l.WithError(token.Error()).Error("Error publishing message to mqtt")
 		} else {
+			span.AddEvent("mqtt_publish_timeout")
 			l.Debug("message timed out")
+			span.SetStatus(codes.Ok, "Publish timed out but may have succeeded")
 			return nil
 		}
 

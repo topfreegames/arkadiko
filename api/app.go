@@ -52,7 +52,7 @@ type App struct {
 	NewRelic   newrelic.Application
 	DDStatsD   *DogStatsD
 	Metrics    *Metrics
-	OtelCloser otel.Closer
+	Otel       *otel.OtelImpl
 	ctx        context.Context
 }
 
@@ -163,23 +163,33 @@ func (app *App) configureOtel() {
 		"operation": "configureOtel",
 	})
 
-	if app.Config.GetBool("jaeger.disabled") {
-		app.OtelCloser = func(context.Context) error { return nil }
+	if app.Config.GetBool("otel.disabled") {
+		l.Info("OpenTelemetry tracing is disabled.")
 		return
 	}
 
-	closer, err := otel.NewTracer(app.ctx)
+	serviceName := app.Config.GetString("otel.service.name")
+	if serviceName == "" {
+		serviceName = "arkadiko"
+	}
+	host := app.Config.GetString("otel.collector.host")
+	port := app.Config.GetString("otel.collector.port")
+	samplingProbability := app.Config.GetFloat64("otel.samplingProbability")
+	otelImpl, err := otel.NewOtelImpl(app.ctx, serviceName, host, port, samplingProbability)
 	if err != nil {
-		l.Error("Failed to initialize Open Telemetry.")
+		l.WithError(err).Error("Failed to initialize Open Telemetry.")
 		return
 	}
+	app.Otel = otelImpl
 
-	app.Config.SetDefault("jaeger.serviceName", "arkadiko")
-	app.App.Use(otelecho.Middleware(app.Config.GetString("jaeger.serviceName"), otelecho.WithSkipper(func(c echo.Context) bool {
-		return strings.Contains(c.Path(), "/healthcheck") 
+	app.App.Use(otelecho.Middleware(serviceName, otelecho.WithSkipper(func(c echo.Context) bool {
+		return strings.Contains(c.Path(), "/healthcheck")
 	})))
 
-	app.OtelCloser = closer
+	l.WithFields(log.Fields{
+		"serviceName":         serviceName,
+		"samplingProbability": samplingProbability,
+	}).Info("OpenTelemetry tracing initialized successfully.")
 }
 
 func (app *App) setConfigurationDefaults() {
@@ -198,7 +208,7 @@ func (app *App) loadConfiguration() error {
 			"configFile": app.Config.ConfigFileUsed(),
 		}).Info("Loaded config file.")
 	} else {
-		return fmt.Errorf("Could not load configuration file from: %s", app.ConfigPath)
+		return fmt.Errorf("could not load configuration file from: %s", app.ConfigPath)
 	}
 
 	return nil
@@ -221,7 +231,6 @@ func (app *App) configureApplication() error {
 	})
 
 	app.App = echo.New()
-
 
 	a := app.App
 
@@ -276,10 +285,6 @@ func (app *App) configureApplication() error {
 	return nil
 }
 
-func (app *App) addError() {
-	app.Errors.Update(1)
-}
-
 // Start starts listening for web requests at specified host and port
 func (app *App) Start() error {
 	l := app.Logger.WithFields(log.Fields{
@@ -328,5 +333,8 @@ func (app *App) Start() error {
 		l.WithError(err).Error("App failed to stop.")
 	}
 
-	return app.OtelCloser(app.ctx)
+	if app.Otel != nil {
+		return app.Otel.CloserFunc(app.ctx)
+	}
+	return nil
 }
