@@ -11,9 +11,21 @@ services:
       - "1883:1883"
       - "8081:8081"
       - "18083:18083"
-
     healthcheck:
       test: "nc -z 0.0.0.0 8081"
       interval: 30s
       timeout: 30s
       retries: 3
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp"  # Jaeger Thrift over UDP
+      - "6832:6832/udp"  # Jaeger Thrift over UDP (binary)
+      - "5778:5778"      # Jaeger agent HTTP configs
+      - "16686:16686"    # Jaeger UI
+      - "4317:4317"      # OTLP gRPC
+      - "4318:4318"      # OTLP HTTP
+      - "14250:14250"    # Jaeger gRPC (used by jaeger-agent)
+      - "14268:14268"    # Jaeger HTTP (direct)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
