@@ -20,6 +20,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/topfreegames/arkadiko/mqttclient"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	context "golang.org/x/net/context"
 )
 
@@ -130,7 +134,7 @@ func (s *Server) loadConfiguration() error {
 			"configFile", s.Config.ConfigFileUsed(),
 		).Info("Loaded config file.")
 	} else {
-		return fmt.Errorf("Could not load configuration file from: %s", s.ConfigPath)
+		return fmt.Errorf("could not load configuration file from: %s", s.ConfigPath)
 	}
 
 	return nil
@@ -150,12 +154,11 @@ func (s *Server) OnErrorHandler(err error, stack []byte) {
 func (s *Server) configureRPC() error {
 	l := s.Logger.WithField("operation", "configureRPC")
 
-	opts := []grpc.ServerOption{}
-
-	//TODO: instrument with Jaeger
-	s.grpcServer = grpc.NewServer(opts...)
+	s.grpcServer = grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	RegisterMQTTServer(s.grpcServer, s)
-	l.Debug("MQTT Server configured properly")
+	l.Debug("MQTT Server configured properly with OpenTelemetry")
 
 	return nil
 }
@@ -194,24 +197,41 @@ func (s *Server) Start() error {
 
 // SendMessage to MQTT Server
 func (s *Server) SendMessage(ctx context.Context, message *Message) (*SendMessageResult, error) {
+	span := trace.SpanFromContext(ctx)
+
+	span.SetAttributes(
+		attribute.String("rpc.service", "MQTT"),
+		attribute.String("rpc.method", "SendMessage"),
+		attribute.String("mqtt.topic", message.Topic),
+		attribute.Bool("mqtt.retained", message.Retained),
+		attribute.Int("mqtt.message_length", len(message.Payload)),
+	)
+
 	l := s.Logger.WithFields(log.Fields{
 		"source":    "rpc",
-		"operation": "Start",
+		"operation": "SendMessage",
 		"Topic":     message.Topic,
 	})
+
 	var err error
 	if message.Retained {
 		l.Debug("Sending retained message.")
+		span.AddEvent("sending_retained_message")
 		err = s.MqttClient.SendRetainedMessage(ctx, message.Topic, message.Payload)
 	} else {
 		l.Debug("Sending message.")
+		span.AddEvent("sending_message")
 		err = s.MqttClient.SendMessage(ctx, message.Topic, message.Payload)
 	}
+
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to send message to MQTT")
 		l.WithError(err).Error("Failed to send message to MQTT.")
 		return nil, err
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return &SendMessageResult{
 		Topic:    message.Topic,
 		Retained: message.Retained,
