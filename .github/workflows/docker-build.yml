@@ -1,18 +1,24 @@
 name: Publish Docker image
+
 on:
   release:
-    types: [published]
+    types:
+      - published
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-[abcehlprt]+.?[0-9]?[0-9]?'
+
 jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v4
         with:
           go-version: '1.23'
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Restore cache
         uses: actions/cache@v4
         with:
@@ -24,23 +30,78 @@ jobs:
         run: go mod download
       - name: Run tests
         run: make test
-  push_to_registry:
-    name: Push Docker image to Docker Hub
+
+  build-amd64:
+    name: Build for linux/amd64
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: '1.23'
       - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Download dependencies
-        run: go mod download && go mod vendor
-      - name: Push to Docker Hub
-        uses: docker/build-push-action@v1
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: tfgco/arkadiko
-          tag_with_ref: true
+
+      - name: Build and push amd64 image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: tfgco/arkadiko:${{ github.ref_name }}-amd64
+          provenance: false
+
+  build-arm64:
+    name: Build for linux/arm64
+    runs-on: ubuntu-22.04-arm
+    needs: test
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push arm64 image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: tfgco/arkadiko:${{ github.ref_name }}-arm64
+          provenance: false
+
+  push-manifest:
+    name: Push multi-arch manifest
+    runs-on: ubuntu-latest
+    needs: [build-amd64, build-arm64]
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Inspect images before creating manifest (Debug Step)
+        run: |
+          echo "--- Inspecting AMD64 image ---"
+          docker buildx imagetools inspect tfgco/arkadiko:${{ github.ref_name }}-amd64
+          echo "--- Inspecting ARM64 image ---"
+          docker buildx imagetools inspect tfgco/arkadiko:${{ github.ref_name }}-arm64
+
+      - name: Create and push manifest
+        run: |
+          docker manifest create tfgco/arkadiko:${{ github.ref_name }} \
+            --amend tfgco/arkadiko:${{ github.ref_name }}-amd64 \
+            --amend tfgco/arkadiko:${{ github.ref_name }}-arm64
+          docker manifest push tfgco/arkadiko:${{ github.ref_name }}
