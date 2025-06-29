@@ -34,7 +34,7 @@ var _ = Describe("HTTP Client", func() {
 
 				Expect(mc.ConfigPath).To(Equal("../config/test.yml"))
 
-				err := mc.SendMessage(nil, "test", `{"message": "hello"}`, false)
+				err := mc.SendMessage(context.Background(), "test", `{"message": "hello"}`, false)
 				Expect(err).To(BeNil())
 			})
 
@@ -46,7 +46,7 @@ var _ = Describe("HTTP Client", func() {
 				topic := uuid.NewV4().String()
 				expectedMsg := `{"message": "hello"}`
 
-				err := hc.SendMessage(nil, topic, expectedMsg, true)
+				err := hc.SendMessage(context.Background(), topic, expectedMsg, true)
 				Expect(err).NotTo(HaveOccurred())
 
 				mc := mqttclient.GetMqttClient("../config/test.yml", nil, nil, nil, logger)

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -16,6 +16,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	ehttp "github.com/topfreegames/extensions/http"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // HTTPError is the error in a http call
@@ -94,6 +97,23 @@ func GetHttpClient(configPath string, l log.FieldLogger) *HttpClient {
 
 // SendMessage sends a message to mqqt using a HTTP POST request
 func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload string, retainBool bool) error {
+	// Create a child span for the HTTP SendMessage operation if a parent span exists in the context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	var span trace.Span
+	ctx, span = trace.SpanFromContext(ctx).TracerProvider().Tracer("arkadiko").Start(ctx, "HttpClient.SendMessage")
+	defer span.End()
+
+	// Add relevant attributes to the span
+	span.SetAttributes(
+		attribute.String("mqtt.topic", topic),
+		attribute.Bool("mqtt.retained", retainBool),
+		attribute.Int("mqtt.message_length", len(payload)),
+		attribute.String("http.url", mc.HttpServerUrl+"/api/v4/mqtt/publish"),
+		attribute.String("http.method", "POST"),
+	)
+
 	lg := mc.Logger.WithFields(log.Fields{
 		"topic":   topic,
 		"retain":  retainBool,
@@ -110,40 +130,63 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(form)
 
+	startTime := time.Now()
+
+	span.AddEvent("http_request_start")
+
 	req, err := http.NewRequest(
 		"POST",
 		mc.HttpServerUrl+"/api/v4/mqtt/publish",
 		b,
 	)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to build HTTP request")
 		lg.WithError(err).Error("failed to build http request")
 		return err
-	}
-	if ctx == nil {
-		ctx = context.Background()
 	}
 	req = req.WithContext(ctx)
 
 	req.SetBasicAuth(mc.user, mc.password)
 	req.Header.Add("Content-Type", "application/json")
+
 	res, err := mc.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to make HTTP request")
 		lg.WithError(err).Error("failed to make request")
 		return err
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to read response body")
 		lg.WithError(err).Error("failed to read body")
 		return err
 	}
 
+	// Calculate and record request latency
+	latency := time.Since(startTime)
+	span.SetAttributes(attribute.Int64("http.latency_ns", latency.Nanoseconds()))
+
+	// Add response information
+	span.SetAttributes(
+		attribute.Int("http.status_code", res.StatusCode),
+		attribute.Int("http.response_size", len(body)),
+	)
+
 	if res.StatusCode > 399 {
 		err := NewHTTPError(res.StatusCode)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, fmt.Sprintf("HTTP error: %d", res.StatusCode))
 		lg.WithError(err).WithField("body", body).Error("failed request")
 		return err
 	}
+
+	span.SetStatus(codes.Ok, "")
+	span.AddEvent("http_request_success")
 	return nil
 }
 

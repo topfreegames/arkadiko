@@ -8,19 +8,26 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
+	"github.com/topfreegames/arkadiko/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // SendMqttHandler is the handler responsible for sending messages to mqtt
 func SendMqttHandler(app *App) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		ctx, rootSpan := app.Otel.StartSpan(c.Request().Context(), "SendMqttHandler")
+		defer rootSpan.End()
+
 		lg := app.Logger.WithFields(log.Fields{
 			"handler": "SendMqttHandler",
 		})
@@ -33,22 +40,30 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		source := c.QueryParam("source")
 
-		body := c.Request().Body
-		b, err := ioutil.ReadAll(body)
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
+		var body []byte
+		var err error
 
-		if string(b) == "null" {
-			return FailWith(400, "Invalid JSON", c)
-		}
-
-		var msgPayload map[string]interface{}
-		err = WithSegment("payload", c, func() error {
-			return json.Unmarshal(b, &msgPayload)
+		err = app.Otel.WithSpan(ctx, "read_request_body", func(ctx context.Context) error {
+			b, readErr := io.ReadAll(c.Request().Body)
+			if readErr != nil {
+				return readErr
+			}
+			body = b
+			return nil
 		})
 		if err != nil {
-			return FailWith(400, err.Error(), c)
+			otel.SetSpanStatus(ctx, codes.Error, err.Error())
+			return FailWith(http.StatusPreconditionFailed, err.Error(), c)
+		}
+
+		var msgPayload map[string]any
+		err = app.Otel.WithSpan(ctx, "unmarshal_payload", func(ctx context.Context) error {
+			unmarshalErr := json.Unmarshal(body, &msgPayload)
+			return unmarshalErr
+		})
+		if err != nil {
+			otel.SetSpanStatus(ctx, codes.Error, err.Error())
+			return FailWith(http.StatusBadRequest, err.Error(), c)
 		}
 
 		// Default should_moderate to false so messages sent from the server side are not moderated
@@ -57,30 +72,43 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 
 		topic := c.ParamValues()[0]
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
+		rootSpan.SetAttributes(
+			attribute.String("mqtt.topic", topic),
+			attribute.Bool("mqtt.retained", retained),
+			attribute.String("request.source", source),
+		)
 
-		b, err = json.Marshal(msgPayload)
+		body, err = json.Marshal(msgPayload)
 		if err != nil {
-			return FailWith(400, err.Error(), c)
+			otel.SetSpanStatus(ctx, codes.Error, err.Error())
+			return FailWith(http.StatusBadRequest, err.Error(), c)
 		}
-		workingString := fmt.Sprintf(`{"topic": "%s", "retained": %t, "payload": %v}`, topic, retained, string(b))
+		workingString := fmt.Sprintf(`{"topic": "%s", "retained": %t, "payload": %v}`, topic, retained, string(body))
 
 		lg = lg.WithFields(log.Fields{
 			"topic":    topic,
 			"retained": retained,
-			"payload":  string(b),
+			"payload":  string(body),
 			"source":   source,
 		})
 
 		var mqttLatency time.Duration
 		var beforeMqttTime time.Time
+		attrs := []attribute.KeyValue{
+			attribute.String("mqtt.topic", topic),
+			attribute.Bool("mqtt.retained", retained),
+			attribute.String("mqtt.message_size", fmt.Sprintf("%d", len(body))),
+		}
+		if source != "" {
+			attrs = append(attrs, attribute.String("request.source", source))
+		}
 
-		err = WithSegment("mqtt", c, func() error {
+		err = app.Otel.WithSpanAttributes(ctx, "mqtt_publish", attrs, func(ctx context.Context) error {
 			beforeMqttTime = time.Now()
-			sendMqttErr := app.MqttClient.PublishMessage(c.Request().Context(), topic, string(b), retained)
-			mqttLatency = time.Now().Sub(beforeMqttTime)
+			sendMqttErr := app.MqttClient.PublishMessage(ctx, topic, string(body), retained)
+			mqttLatency = time.Since(beforeMqttTime)
+
+			otel.AddSpanAttributes(ctx, attribute.Int64("mqtt.latency_ns", mqttLatency.Nanoseconds()))
 
 			return sendMqttErr
 		})
@@ -102,9 +130,12 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		c.Set("retained", retained)
 
 		if err != nil {
+			otel.SetSpanStatus(ctx, codes.Error, err.Error())
 			lg.WithError(err).Error("failed to send mqtt message")
-			return FailWith(500, err.Error(), c)
+			return FailWith(http.StatusInternalServerError, err.Error(), c)
 		}
+
+		otel.SetSpanStatus(ctx, codes.Ok, "")
 		return c.String(http.StatusOK, workingString)
 	}
 }

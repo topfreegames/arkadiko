@@ -5,10 +5,14 @@ mqttserver:
   pass: password
   usetls: false
   insecure_tls: true
-jaeger:
-  serviceName: arkadiko
+otel:
+  collector:
+    host: localhost
+    port: "4317"
+  service:
+    name: arkadiko
   disabled: false
-  samplingProbability: 1.0
+  samplingProbability: 0.1
 dogstatsd:
   host: localhost:8125
   prefix: arkadiko.
