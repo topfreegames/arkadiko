@@ -45,6 +45,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		var msgPayload map[string]interface{}
 		err = WithSegment("payload", c, func() error {
+			lg.Debug("payload", string(b))
 			return json.Unmarshal(b, &msgPayload)
 		})
 		if err != nil {
