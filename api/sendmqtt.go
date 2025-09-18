@@ -10,8 +10,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -34,7 +35,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		source := c.QueryParam("source")
 
 		body := c.Request().Body
-		b, err := ioutil.ReadAll(body)
+		b, err := io.ReadAll(body)
 		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
@@ -45,6 +46,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 
 		var msgPayload map[string]interface{}
 		err = WithSegment("payload", c, func() error {
+			lg.Debug("payload", string(b))
 			return json.Unmarshal(b, &msgPayload)
 		})
 		if err != nil {
@@ -60,6 +62,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
+		gameID := getGameFromTopic(topic)
 
 		b, err = json.Marshal(msgPayload)
 		if err != nil {
@@ -88,18 +91,20 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		tags := []string{
 			fmt.Sprintf("error:%t", err != nil),
 			fmt.Sprintf("retained:%t", retained),
+			fmt.Sprintf("game_id:%s", gameID),
 		}
 		if source != "" {
 			tags = append(tags, fmt.Sprintf("requestor:%s", source))
 		}
 
 		app.DDStatsD.Timing("mqtt_latency", mqttLatency, tags...)
-		app.Metrics.MQTTLatency.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained)).Observe(mqttLatency.Seconds())
+		app.Metrics.MQTTLatency.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained), gameID).Observe(mqttLatency.Seconds())
 		lg = lg.WithField("mqttLatency", mqttLatency.Nanoseconds())
 		lg.Debug("sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
 		c.Set("requestor", source)
 		c.Set("retained", retained)
+		c.Set("game_id", gameID)
 
 		if err != nil {
 			lg.WithError(err).Error("failed to send mqtt message")
@@ -107,4 +112,9 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 		return c.String(http.StatusOK, workingString)
 	}
+}
+
+func getGameFromTopic(topic string) string {
+	parts := strings.Split(topic, "/")
+	return parts[1]
 }
