@@ -89,7 +89,6 @@ func NewResponseTimeMetricsMiddleware(
 	ddStatsD MetricsReporter,
 	latencyMetric *prometheus.HistogramVec,
 ) *ResponseTimeMetricsMiddleware {
-
 	return &ResponseTimeMetricsMiddleware{
 		DDStatsD:      ddStatsD,
 		latencyMetric: latencyMetric,
@@ -108,15 +107,22 @@ func (responseTimeMiddleware ResponseTimeMetricsMiddleware) Serve(next echo.Hand
 
 		timeUsed := time.Since(startTime)
 
+		topic := "unknown"
+		paramValues := c.ParamValues()
+		if len(paramValues) > 0 {
+			topic = paramValues[0]
+		}
+
 		tags := []string{
 			fmt.Sprintf("route:%s", route),
 			fmt.Sprintf("method:%s", method),
 			fmt.Sprintf("status:%d", status),
+			fmt.Sprintf("topic:%s", topic),
 		}
 
 		// Keeping both for retro compatibility in the short term
 		responseTimeMiddleware.DDStatsD.Timing(responseTimeMillisecondsMetricName, timeUsed, tags...)
-		responseTimeMiddleware.latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status)).Observe(timeUsed.Seconds())
+		responseTimeMiddleware.latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status), topic).Observe(timeUsed.Seconds())
 
 		return result
 	}
@@ -201,7 +207,7 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			"source": "request",
 		})
 
-		//all except latency to string
+		// all except latency to string
 		var ip, method, path string
 		var status int
 		var latency time.Duration
@@ -214,7 +220,7 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 
 		err := next(c)
 
-		//no time.Since in order to format it well after
+		// no time.Since in order to format it well after
 		endTime = time.Now()
 		latency = endTime.Sub(startTime)
 
@@ -250,19 +256,19 @@ func (l *LoggerMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			reqLog = reqLog.WithField("retained", retained)
 		}
 
-		//request failed
+		// request failed
 		if status > 399 && status < 500 {
 			reqLog.WithError(err).Warn("Request failed.")
 			return err
 		}
 
-		//request is ok, but server failed
+		// request is ok, but server failed
 		if status > 499 {
 			reqLog.WithError(err).Error("Response failed.")
 			return err
 		}
 
-		//Everything went ok
+		// Everything went ok
 		reqLog.Debug("Request successful.")
 		return err
 	}

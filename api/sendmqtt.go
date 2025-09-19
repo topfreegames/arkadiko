@@ -88,17 +88,19 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		tags := []string{
 			fmt.Sprintf("error:%t", err != nil),
 			fmt.Sprintf("retained:%t", retained),
+			fmt.Sprintf("topic:%s", topic),
 		}
 		if source != "" {
 			tags = append(tags, fmt.Sprintf("requestor:%s", source))
 		}
 
 		app.DDStatsD.Timing("mqtt_latency", mqttLatency, tags...)
-		app.Metrics.MQTTLatency.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained)).Observe(mqttLatency.Seconds())
+		app.Metrics.MQTTLatency.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained), topic).Observe(mqttLatency.Seconds())
 		lg = lg.WithField("mqttLatency", mqttLatency.Nanoseconds())
 		lg.Debug("sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
 		c.Set("requestor", source)
+		c.Set("topic", topic)
 		c.Set("retained", retained)
 
 		if err != nil {
