@@ -107,22 +107,15 @@ func (responseTimeMiddleware ResponseTimeMetricsMiddleware) Serve(next echo.Hand
 
 		timeUsed := time.Since(startTime)
 
-		topic := "unknown"
-		paramValues := c.ParamValues()
-		if len(paramValues) > 0 {
-			topic = paramValues[0]
-		}
-
 		tags := []string{
 			fmt.Sprintf("route:%s", route),
 			fmt.Sprintf("method:%s", method),
 			fmt.Sprintf("status:%d", status),
-			fmt.Sprintf("topic:%s", topic),
 		}
 
 		// Keeping both for retro compatibility in the short term
 		responseTimeMiddleware.DDStatsD.Timing(responseTimeMillisecondsMetricName, timeUsed, tags...)
-		responseTimeMiddleware.latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status), topic).Observe(timeUsed.Seconds())
+		responseTimeMiddleware.latencyMetric.WithLabelValues(route, method, fmt.Sprintf("%d", status)).Observe(timeUsed.Seconds())
 
 		return result
 	}

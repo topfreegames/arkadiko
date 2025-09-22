@@ -98,6 +98,7 @@ type Metrics struct {
 	APILatency           *prometheus.HistogramVec
 	MQTTLatency          *prometheus.HistogramVec
 	DisconnectionCounter *prometheus.CounterVec
+	SendMqttRequests     *prometheus.CounterVec
 }
 
 var (
@@ -112,17 +113,22 @@ func NewMetrics() *Metrics {
 				Namespace: "arkadiko",
 				Name:      "response_time",
 				Help:      "API response time",
-			}, []string{"route", "method", "status", "topic"}),
+			}, []string{"route", "method", "status"}),
 			MQTTLatency: promauto.NewHistogramVec(prometheus.HistogramOpts{
 				Namespace: "arkadiko",
 				Name:      "mqtt_latency",
 				Help:      "MQTT latency",
-			}, []string{"error", "retained", "topic"}),
+			}, []string{"error", "retained", "game_id"}),
 			DisconnectionCounter: promauto.NewCounterVec(prometheus.CounterOpts{
 				Namespace: "arkadiko",
 				Name:      "mqtt_disconnections",
 				Help:      "MQTT disconnections",
-			}, []string{"error", "topic"}),
+			}, []string{"error", "game_id"}),
+			SendMqttRequests: promauto.NewCounterVec(prometheus.CounterOpts{
+				Namespace: "arkadiko",
+				Name:      "sendmqtt_requests",
+				Help:      "SendMQTT request count",
+			}, []string{"route", "method", "status", "game_id"}),
 		}
 	})
 

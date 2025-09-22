@@ -93,12 +93,12 @@ var _ = Describe("Send to MQTT Handler", func() {
 				Expect(body).To(Equal(response))
 
 				var msg mqtt.Message
-				var onMessageHandler = func(client mqtt.Client, message mqtt.Message) {
+				onMessageHandler := func(client mqtt.Client, message mqtt.Message) {
 					msg = message
 				}
 				client.MqttClient.Subscribe(topic, 2, onMessageHandler)
 
-				//Have to wait so the goroutine can call our handler
+				// Have to wait so the goroutine can call our handler
 				time.Sleep(50 * time.Millisecond)
 
 				Expect(msg).NotTo(BeNil())
