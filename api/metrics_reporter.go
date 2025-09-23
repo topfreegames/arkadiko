@@ -100,8 +100,10 @@ type Metrics struct {
 	DisconnectionCounter *prometheus.CounterVec
 }
 
-var metricsOnce sync.Once
-var metricsSingleton *Metrics
+var (
+	metricsOnce      sync.Once
+	metricsSingleton *Metrics
+)
 
 func NewMetrics() *Metrics {
 	metricsOnce.Do(func() {
@@ -115,12 +117,12 @@ func NewMetrics() *Metrics {
 				Namespace: "arkadiko",
 				Name:      "mqtt_latency",
 				Help:      "MQTT latency",
-			}, []string{"error", "retained"}),
+			}, []string{"error", "retained", "game_id"}),
 			DisconnectionCounter: promauto.NewCounterVec(prometheus.CounterOpts{
 				Namespace: "arkadiko",
 				Name:      "mqtt_disconnections",
 				Help:      "MQTT disconnections",
-			}, []string{"error"}),
+			}, []string{"error", "game_id"}),
 		}
 	})
 

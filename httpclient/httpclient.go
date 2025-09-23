@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -51,8 +51,10 @@ type MqttPost struct {
 	ClientId string `json:"clientid"`
 }
 
-var client *HttpClient
-var once sync.Once
+var (
+	client *HttpClient
+	once   sync.Once
+)
 
 func getHTTPTransport(
 	maxIdleConns, maxIdleConnsPerHost int,
@@ -133,7 +135,7 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		lg.WithError(err).Error("failed to read body")
 		return err

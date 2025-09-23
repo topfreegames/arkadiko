@@ -10,8 +10,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -34,7 +35,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		source := c.QueryParam("source")
 
 		body := c.Request().Body
-		b, err := ioutil.ReadAll(body)
+		b, err := io.ReadAll(body)
 		if err != nil {
 			return FailWith(400, err.Error(), c)
 		}
@@ -57,9 +58,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 
 		topic := c.ParamValues()[0]
-		if err != nil {
-			return FailWith(400, err.Error(), c)
-		}
+		gameID := getGameID(topic, msgPayload)
 
 		b, err = json.Marshal(msgPayload)
 		if err != nil {
@@ -88,17 +87,20 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		tags := []string{
 			fmt.Sprintf("error:%t", err != nil),
 			fmt.Sprintf("retained:%t", retained),
+			fmt.Sprintf("game_id:%s", gameID),
 		}
 		if source != "" {
 			tags = append(tags, fmt.Sprintf("requestor:%s", source))
 		}
 
 		app.DDStatsD.Timing("mqtt_latency", mqttLatency, tags...)
-		app.Metrics.MQTTLatency.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained)).Observe(mqttLatency.Seconds())
+		app.Metrics.MQTTLatency.WithLabelValues(fmt.Sprintf("%t", err != nil), fmt.Sprintf("%t", retained), gameID).Observe(mqttLatency.Seconds())
 		lg = lg.WithField("mqttLatency", mqttLatency.Nanoseconds())
 		lg.Debug("sent mqtt message")
 		c.Set("mqttLatency", mqttLatency)
 		c.Set("requestor", source)
+		c.Set("topic", topic)
+		c.Set("game_id", gameID)
 		c.Set("retained", retained)
 
 		if err != nil {
@@ -107,4 +109,20 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 		return c.String(http.StatusOK, workingString)
 	}
+}
+
+func getGameID(topic string, msgPayload map[string]interface{}) string {
+	for _, k := range []string{"game_id", "gameID"} {
+		if v, ok := msgPayload[k]; ok && v != nil {
+			return fmt.Sprint(v)
+		}
+	}
+	gameID := ""
+	if strings.Contains(topic, "/") {
+		gameID = strings.Split(topic, "/")[1]
+	} else {
+		gameID = topic
+	}
+
+	return gameID
 }
