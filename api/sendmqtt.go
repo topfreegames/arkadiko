@@ -26,14 +26,6 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 			"handler": "SendMqttHandler",
 		})
 
-		var gameID string
-		defer func(route, method, status string) {
-			if gameID == "" {
-				gameID = "unknown" // if request fails early gameID will be unknown at metrics
-			}
-			app.Metrics.SendMqttRequests.WithLabelValues(route, method, status, gameID).Inc()
-		}(c.Path(), c.Request().Method, fmt.Sprintf("%d", c.Response().Status))
-
 		retainedValue := c.QueryParam("retained")
 		retained := true
 		if retainedValue != "true" {
@@ -66,7 +58,7 @@ func SendMqttHandler(app *App) func(c echo.Context) error {
 		}
 
 		topic := c.ParamValues()[0]
-		gameID = getGameID(topic, msgPayload)
+		gameID := getGameID(topic, msgPayload)
 
 		b, err = json.Marshal(msgPayload)
 		if err != nil {

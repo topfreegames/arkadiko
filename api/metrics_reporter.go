@@ -98,7 +98,6 @@ type Metrics struct {
 	APILatency           *prometheus.HistogramVec
 	MQTTLatency          *prometheus.HistogramVec
 	DisconnectionCounter *prometheus.CounterVec
-	SendMqttRequests     *prometheus.CounterVec
 }
 
 var (
@@ -124,11 +123,6 @@ func NewMetrics() *Metrics {
 				Name:      "mqtt_disconnections",
 				Help:      "MQTT disconnections",
 			}, []string{"error", "game_id"}),
-			SendMqttRequests: promauto.NewCounterVec(prometheus.CounterOpts{
-				Namespace: "arkadiko",
-				Name:      "sendmqtt_requests",
-				Help:      "SendMQTT request count",
-			}, []string{"route", "method", "status", "game_id"}),
 		}
 	})
 
