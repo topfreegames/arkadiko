@@ -106,7 +106,7 @@ func (mc *MqttClient) PublishMessage(ctx context.Context, topic string, message 
 	l.Debug("Publishing message to mqtt")
 
 	for i := 0; i < 3; i++ { // Retry up to 3 times
-		token := mc.MqttClient.WithContext(ctx).Publish(topic, 2, retained, message)
+		token := mc.MqttClient.WithContext(ctx).Publish(topic, 1, retained, message)
 		if token.WaitTimeout(mc.Timeout) {
 			l.Debug("message published to mqtt")
 			break

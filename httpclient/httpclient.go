@@ -105,7 +105,7 @@ func (mc *HttpClient) SendMessage(ctx context.Context, topic string, payload str
 		Topic:    topic,
 		Payload:  payload,
 		Retain:   retainBool,
-		Qos:      2,
+		Qos:      1,
 		ClientId: fmt.Sprintf("arkadiko-%s", uuid.NewV4().String()),
 	}
 
