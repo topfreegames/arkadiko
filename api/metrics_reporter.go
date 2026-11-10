@@ -122,7 +122,7 @@ func NewMetrics() *Metrics {
 				Namespace: "arkadiko",
 				Name:      "mqtt_disconnections",
 				Help:      "MQTT disconnections",
-			}, []string{"error", "game_id"}),
+			}, []string{"error"}),
 		}
 	})
 
