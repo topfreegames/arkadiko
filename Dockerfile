@@ -20,7 +20,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o arkadiko .
 # Verify if the binary is truly static.
 RUN ldd /src/arkadiko 2>&1 | grep -q 'Not a valid dynamic program'
 
-FROM alpine
+FROM alpine:3.24
+
+RUN apk add --no-cache --upgrade 'ca-certificates>=20261020-r0' 'ca-certificates-bundle>=20261020-r0'
 
 COPY --from=build /src/arkadiko ./arkadiko
 COPY --from=build /src/config ./config
