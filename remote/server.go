@@ -15,7 +15,6 @@ import (
 
 	"google.golang.org/grpc"
 
-	raven "github.com/getsentry/raven-go"
 	newrelic "github.com/newrelic/go-agent"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -60,7 +59,6 @@ func (s *Server) configure() error {
 	if err != nil {
 		return err
 	}
-	s.configureSentry()
 	err = s.configureNewRelic()
 	if err != nil {
 		return err
@@ -78,16 +76,6 @@ func (s *Server) configure() error {
 	defaultLogger.Info("Connected to mqtt successfully.")
 
 	return nil
-}
-
-func (s *Server) configureSentry() {
-	l := s.Logger.WithFields(log.Fields{
-		"source":    "rpc",
-		"operation": "configureSentry",
-	})
-	sentryURL := s.Config.GetString("sentry.url")
-	raven.SetDSN(sentryURL)
-	l.Info("Configured sentry successfully.")
 }
 
 func (s *Server) configureNewRelic() error {
@@ -139,12 +127,6 @@ func (s *Server) loadConfiguration() error {
 // OnErrorHandler handles panics
 func (s *Server) OnErrorHandler(err error, stack []byte) {
 	s.Logger.WithError(err).Error("Panic occurred.")
-
-	tags := map[string]string{
-		"source": "s",
-		"type":   "panic",
-	}
-	raven.CaptureError(err, tags)
 }
 
 func (s *Server) configureRPC() error {

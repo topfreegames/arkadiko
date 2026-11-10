@@ -10,8 +10,6 @@ mqttserver:
   timeout: 500ms
 newrelic:
   key: ""
-sentry:
-  url: ""
 jaeger:
   serviceName: arkadiko
   disabled: true

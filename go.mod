@@ -4,7 +4,6 @@ go 1.23
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
-	github.com/getsentry/raven-go v0.2.0
 	github.com/golang/protobuf v1.5.4
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/mattn/goveralls v0.0.7
@@ -52,7 +51,6 @@ require (
 	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
 	github.com/andybalholm/brotli v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/certifi/gocertifi v0.0.0-20200922220541-2c3bb06c6054 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
