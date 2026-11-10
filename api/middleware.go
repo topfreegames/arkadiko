@@ -8,14 +8,12 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"runtime/debug"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	raven "github.com/getsentry/raven-go"
 	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 )
@@ -40,41 +38,6 @@ func (v *VersionMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 		c.Response().Header().Set(echo.HeaderServer, fmt.Sprintf("Arkadiko/v%s", v.Version))
 		c.Response().Header().Set("Arkadiko-Server", fmt.Sprintf("Arkadiko/v%s", v.Version))
 		return next(c)
-	}
-}
-
-// NewSentryMiddleware returns a new sentry middleware
-func NewSentryMiddleware(app *App) *SentryMiddleware {
-	return &SentryMiddleware{
-		App: app,
-	}
-}
-
-// SentryMiddleware is responsible for sending all exceptions to sentry
-type SentryMiddleware struct {
-	App *App
-}
-
-// Serve serves the middleware
-func (s *SentryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		err := next(c)
-		if err != nil {
-			if httpErr, ok := err.(*echo.HTTPError); ok {
-				if httpErr.Code < 500 {
-					return err
-				}
-			}
-			tags := map[string]string{
-				"source": "app",
-				"type":   "Internal server error",
-				"url":    c.Request().URL.String(),
-				"status": fmt.Sprintf("%d", c.Response().Status),
-			}
-			raven.SetHttpContext(newHTTPFromCtx(c))
-			raven.CaptureError(err, tags)
-		}
-		return err
 	}
 }
 
@@ -119,36 +82,6 @@ func (responseTimeMiddleware ResponseTimeMetricsMiddleware) Serve(next echo.Hand
 
 		return result
 	}
-}
-
-func getHTTPParams(ctx echo.Context) (string, map[string]string, string) {
-	qs := ""
-	if len(ctx.QueryParams()) > 0 {
-		qsBytes, _ := json.Marshal(ctx.QueryParams())
-		qs = string(qsBytes)
-	}
-
-	//TODO: Fix this
-	//headers := map[string]string{}
-	//for _, headerKey := range ctx.Response().Header(). {
-	//headers[string(headerKey)] = string(ctx.Response().Header().Get(headerKey))
-	//}
-
-	cookies := string(ctx.Response().Header().Get("Cookie"))
-	return qs, map[string]string{}, cookies
-}
-
-func newHTTPFromCtx(ctx echo.Context) *raven.Http {
-	qs, headers, cookies := getHTTPParams(ctx)
-
-	h := &raven.Http{
-		Method:  string(ctx.Request().Method),
-		Cookies: cookies,
-		Query:   qs,
-		URL:     ctx.Request().URL.String(),
-		Headers: headers,
-	}
-	return h
 }
 
 // NewRecoveryMiddleware returns a configured middleware

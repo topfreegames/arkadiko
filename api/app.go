@@ -18,7 +18,6 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	raven "github.com/getsentry/raven-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	newrelic "github.com/newrelic/go-agent"
@@ -84,7 +83,6 @@ func (app *App) Configure() error {
 	if err != nil {
 		return err
 	}
-	app.configureSentry()
 	err = app.configureNewRelic()
 	if err != nil {
 		return err
@@ -103,16 +101,6 @@ func (app *App) Configure() error {
 	app.configureOtel()
 
 	return nil
-}
-
-func (app *App) configureSentry() {
-	l := app.Logger.WithFields(log.Fields{
-		"source":    "app",
-		"operation": "configureSentry",
-	})
-	sentryURL := app.Config.GetString("sentry.url")
-	raven.SetDSN(sentryURL)
-	l.Info("Configured sentry successfully.")
 }
 
 func (app *App) configureStatsD() error {
@@ -207,12 +195,6 @@ func (app *App) loadConfiguration() error {
 // OnErrorHandler handles panics
 func (app *App) OnErrorHandler(err error, stack []byte) {
 	app.Logger.WithError(err).Error("Panic occurred.")
-
-	tags := map[string]string{
-		"source": "app",
-		"type":   "panic",
-	}
-	raven.CaptureError(err, tags)
 }
 
 func (app *App) configureApplication() error {
@@ -247,7 +229,6 @@ func (app *App) configureApplication() error {
 	a.Use(NewRecoveryMiddleware(app.OnErrorHandler).Serve)
 	a.Use(NewResponseTimeMetricsMiddleware(app.DDStatsD, app.Metrics.APILatency).Serve)
 	a.Use(NewVersionMiddleware().Serve)
-	a.Use(NewSentryMiddleware(app).Serve)
 	a.Use(NewNewRelicMiddleware(app, app.Logger).Serve)
 
 	// Routes
