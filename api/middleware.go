@@ -103,7 +103,7 @@ func (r *RecoveryMiddleware) Serve(next echo.HandlerFunc) echo.HandlerFunc {
 			if err := recover(); err != nil {
 				eError, ok := err.(error)
 				if !ok {
-					eError = fmt.Errorf(fmt.Sprintf("%v", err))
+					eError = fmt.Errorf("%v", err)
 				}
 				if r.OnError != nil {
 					r.OnError(eError, debug.Stack())
