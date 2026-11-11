@@ -4,7 +4,7 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright © 2016 Top Free Games <backend@tfgco.com>
 
-FROM golang:1.23-alpine AS build
+FROM golang:1.27.3-alpine AS build
 
 LABEL app=arkadiko
 LABEL builder=true
